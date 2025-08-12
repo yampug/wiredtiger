@@ -198,7 +198,7 @@ tasks:
     env:
       DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
     cmds:
-      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib"
 
   # Quick test Crystal bindings (assumes already built)
   test-crystal-quick:
@@ -207,7 +207,7 @@ tasks:
     env:
       DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
     cmds:
-      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib"
 
   # Test Crystal bindings with verbose output
   test-crystal-verbose:
@@ -217,7 +217,7 @@ tasks:
     env:
       DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
     cmds:
-      - crystal spec --verbose --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+      - crystal spec --verbose --link-flags="-L{{.CRYSTAL_DIR}}/lib"
 
   # Test Crystal bindings with custom test directory
   test-crystal-custom-dir:
@@ -229,7 +229,7 @@ tasks:
       WIREDTIGER_TEST_DIR: "{{.CRYSTAL_DIR}}/testdb"
     cmds:
       - mkdir -p testdb
-      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib"
       - rm -rf testdb
 
 # =============================================================================
@@ -257,6 +257,13 @@ tasks:
   # Test everything with verbose output
   test-all-verbose:
     desc: "Test all bindings with verbose output"
+    deps: [test-java, test-crystal-verbose]
+    cmds:
+      - echo "All tests completed successfully with verbose output!"
+
+  # Test everything with verbose output (no build dependencies)
+  test-all-verbose-quick:
+    desc: "Test all bindings with verbose output (assumes already built)"
     deps: [test-java, test-crystal-verbose]
     cmds:
       - echo "All tests completed successfully with verbose output!"
@@ -365,13 +372,14 @@ tasks:
       - echo "  build-crystal  - Build complete Crystal bindings"
       - echo "  test-crystal   - Test Crystal bindings"
       - echo "  test-crystal-quick - Quick test (assumes built)"
-      - echo "  test-crystal-verbose - Test with verbose output"
+      - echo "  test-crystal-verbose - Test with verbose output (assumes built)"
       - echo "  test-crystal-custom-dir - Test with custom test directory"
       - echo ""
       - echo "=== Combined Tasks ==="
       - echo "  build-all      - Build all bindings"
       - echo "  test-all       - Test all bindings"
       - echo "  test-all-verbose - Test all with verbose output"
+      - echo "  test-all-verbose-quick - Test all with verbose output (assumes built)"
       - echo ""
       - echo "=== Utility Tasks ==="
       - echo "  setup          - Setup development environment"
