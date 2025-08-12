@@ -198,7 +198,39 @@ tasks:
     env:
       DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
     cmds:
-      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}"
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+
+  # Quick test Crystal bindings (assumes already built)
+  test-crystal-quick:
+    desc: "Quick test of Crystal bindings (assumes already built)"
+    dir: "{{.CRYSTAL_DIR}}"
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+
+  # Test Crystal bindings with verbose output
+  test-crystal-verbose:
+    desc: "Test Crystal bindings with verbose output"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - crystal spec --verbose --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+
+  # Test Crystal bindings with custom test directory
+  test-crystal-custom-dir:
+    desc: "Test Crystal bindings with custom test directory"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+      WIREDTIGER_TEST_DIR: "{{.CRYSTAL_DIR}}/testdb"
+    cmds:
+      - mkdir -p testdb
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -lwiredtiger_crystal"
+      - rm -rf testdb
 
 # =============================================================================
 # COMBINED TASKS
@@ -221,6 +253,13 @@ tasks:
     deps: [test-java, test-crystal]
     cmds:
       - echo "All tests completed successfully!"
+
+  # Test everything with verbose output
+  test-all-verbose:
+    desc: "Test all bindings with verbose output"
+    deps: [test-java, test-crystal-verbose]
+    cmds:
+      - echo "All tests completed successfully with verbose output!"
 
 # =============================================================================
 # UTILITY TASKS
@@ -302,3 +341,40 @@ tasks:
   # Legacy aliases for backward compatibility
   test: test-java
   test-junit: test-java-junit
+
+  # Crystal test aliases
+  crystal-test: test-crystal
+  crystal-test-quick: test-crystal-quick
+  crystal-test-verbose: test-crystal-verbose
+
+  # Documentation
+  help:
+    desc: "Show available tasks and their descriptions"
+    cmds:
+      - echo "=== WiredTiger Bindings Taskfile ==="
+      - echo ""
+      - echo "=== Core Tasks ==="
+      - echo "  build-core     - Build the core WiredTiger C library"
+      - echo ""
+      - echo "=== Java Bindings ==="
+      - echo "  build-java     - Build complete Java bindings"
+      - echo "  test-java      - Test Java bindings"
+      - echo "  test-java-junit - Run JUnit tests for Java"
+      - echo ""
+      - echo "=== Crystal Bindings ==="
+      - echo "  build-crystal  - Build complete Crystal bindings"
+      - echo "  test-crystal   - Test Crystal bindings"
+      - echo "  test-crystal-quick - Quick test (assumes built)"
+      - echo "  test-crystal-verbose - Test with verbose output"
+      - echo "  test-crystal-custom-dir - Test with custom test directory"
+      - echo ""
+      - echo "=== Combined Tasks ==="
+      - echo "  build-all      - Build all bindings"
+      - echo "  test-all       - Test all bindings"
+      - echo "  test-all-verbose - Test all with verbose output"
+      - echo ""
+      - echo "=== Utility Tasks ==="
+      - echo "  setup          - Setup development environment"
+      - echo "  info           - Show library information"
+      - echo "  clean          - Clean all build artifacts"
+      - echo "  help           - Show this help message"
