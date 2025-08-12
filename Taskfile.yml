@@ -1,0 +1,180 @@
+version: '3'
+
+vars:
+  JAVA_HOME:
+    sh: echo "${JAVA_HOME:-$(/usr/libexec/java_home)}"
+  WIREDTIGER_ROOT: "{{.PWD}}"
+  JAVA_DIR: "{{.WIREDTIGER_ROOT}}/lang/java"
+  JNI_INCLUDES: "-I{{.JAVA_HOME}}/include -I{{.JAVA_HOME}}/include/darwin"
+
+tasks:
+  # Build WiredTiger core library
+  build-core:
+    desc: "Build the core WiredTiger C library"
+    cmds:
+      - ./configure
+      - make -j4
+    sources:
+      - "src/**/*.c"
+      - "src/**/*.h"
+    generates:
+      - ".libs/libwiredtiger.dylib"
+
+  # Clean Java bindings
+  clean-java:
+    desc: "Clean Java bindings build artifacts"
+    dir: "{{.JAVA_DIR}}"
+    cmds:
+      - rm -rf com/ *.h *.class .libs/
+      - rm -f "{{.WIREDTIGER_ROOT}}/wiredtiger.jar"
+
+  # Generate JNI headers
+  generate-headers:
+    desc: "Generate JNI headers from Java classes"
+    dir: "{{.JAVA_DIR}}"
+    deps: [clean-java]
+    cmds:
+      - javac -h . -d . src/com/wiredtiger/db/*.java
+      - |
+        cat > com_wiredtiger_db_WiredTiger.h << 'EOF'
+        #include <jni.h>
+        #ifndef _Included_com_wiredtiger_db_WiredTiger
+        #define _Included_com_wiredtiger_db_WiredTiger
+        #ifdef __cplusplus
+        extern "C" {
+        #endif
+        JNIEXPORT jobject JNICALL Java_com_wiredtiger_db_WiredTiger_open
+          (JNIEnv *, jclass, jstring, jstring);
+        #ifdef __cplusplus
+        }
+        #endif
+        #endif
+        EOF
+    sources:
+      - "src/com/wiredtiger/db/*.java"
+    generates:
+      - "com_wiredtiger_db_*.h"
+      - "com/wiredtiger/db/*.class"
+
+  # Compile JNI library
+  compile-jni:
+    desc: "Compile JNI library"
+    dir: "{{.JAVA_DIR}}"
+    deps: [build-core, generate-headers]
+    cmds:
+      - mkdir -p .libs
+      - |
+        gcc -shared -fPIC \
+          {{.JNI_INCLUDES}} \
+          -I../../src/include \
+          -I../.. \
+          -L../../.libs \
+          -lwiredtiger \
+          wiredtiger_java.c \
+          -o .libs/libwiredtiger_java.dylib
+    sources:
+      - "wiredtiger_java.c"
+      - "../../.libs/libwiredtiger.dylib"
+    generates:
+      - ".libs/libwiredtiger_java.dylib"
+
+  # Create JAR file
+  create-jar:
+    desc: "Create wiredtiger.jar with Java classes"
+    dir: "{{.JAVA_DIR}}"
+    deps: [generate-headers]
+    cmds:
+      - rm -rf com/
+      - javac -target 11 -source 11 -d . src/com/wiredtiger/db/*.java
+      - jar cf ../../wiredtiger.jar -C . com/
+    sources:
+      - "src/com/wiredtiger/db/*.java"
+    generates:
+      - "../../wiredtiger.jar"
+
+  # Build everything
+  build-all:
+    desc: "Build complete WiredTiger Java bindings"
+    deps: [compile-jni, create-jar]
+    cmds:
+      - echo "WiredTiger Java bindings built successfully!"
+      - echo "JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
+      - echo "JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
+
+  # Test the bindings
+  test:
+    desc: "Test the Java bindings using jbindingstest"
+    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
+    deps: [build-all]
+    env:
+      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - mkdir -p .wt-java-smoke
+      - gradle run -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+
+  # Run JUnit tests
+  test-junit:
+    desc: "Run JUnit tests for Java bindings"
+    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
+    deps: [build-all]
+    env:
+      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - mkdir -p .wt-java-smoke
+      - gradle test -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+
+  # Show library information
+  info:
+    desc: "Show information about built libraries"
+    cmds:
+      - echo "=== WiredTiger Core Library ==="
+      - ls -la .libs/libwiredtiger.dylib 2>/dev/null || echo "Core library not built"
+      - echo ""
+      - echo "=== Java JNI Library ==="
+      - ls -la {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib 2>/dev/null || echo "JNI library not built"
+      - echo ""
+      - echo "=== Java JAR ==="
+      - ls -la wiredtiger.jar 2>/dev/null || echo "JAR not built"
+
+  # Clean everything
+  clean:
+    desc: "Clean all build artifacts"
+    cmds:
+      - make clean || true
+      - task: clean-java
+      - rm -rf .libs/ build/ .wt-java-smoke/
+      - rm -f wiredtiger.jar
+
+  # Setup development environment
+  setup:
+    desc: "Setup development environment and check dependencies"
+    cmds:
+      - echo "=== Checking Dependencies ==="
+      - echo "Java Home {{.JAVA_HOME}}"
+      - java -version
+      - javac -version
+      - gcc --version | head -1
+      - echo ""
+      - echo "=== WiredTiger Configuration ==="
+      - echo "Root {{.WIREDTIGER_ROOT}}"
+      - echo "Java Dir {{.JAVA_DIR}}"
+      - echo ""
+      - echo "Environment ready for WiredTiger Java bindings development"
+
+  # Development: quick rebuild and test
+  dev:
+    desc: "Quick development cycle: rebuild and test"
+    deps: [build-all, test]
+
+  # Package for distribution
+  package:
+    desc: "Package Java bindings for distribution"
+    deps: [build-all]
+    cmds:
+      - mkdir -p dist/lib dist/include
+      - cp wiredtiger.jar dist/
+      - cp {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib dist/lib/
+      - cp .libs/libwiredtiger.dylib dist/lib/
+      - cp {{.JAVA_DIR}}/com_wiredtiger_db_*.h dist/include/
+      - echo "Distribution package created in dist/"
+      - ls -la dist/
