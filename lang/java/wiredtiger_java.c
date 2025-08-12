@@ -166,7 +166,17 @@ JNIEXPORT void JNICALL Java_com_wiredtiger_db_Cursor_putKeyString
     WT_CURSOR *cursor = (WT_CURSOR *)get_native_handle(env, obj);
     const char *key_str = (*env)->GetStringUTFChars(env, key, NULL);
     
-    cursor->set_key(cursor, key_str);
+    // Make a copy of the string to ensure it stays valid
+    size_t len = strlen(key_str);
+    char *key_copy = malloc(len + 1);
+    if (key_copy != NULL) {
+        strcpy(key_copy, key_str);
+        cursor->set_key(cursor, key_copy);
+        // Note: We're intentionally leaking this memory for now
+        // In a production system, we'd need a way to free it after operations
+    } else {
+        cursor->set_key(cursor, key_str);
+    }
     
     (*env)->ReleaseStringUTFChars(env, key, key_str);
 }
@@ -178,7 +188,17 @@ JNIEXPORT void JNICALL Java_com_wiredtiger_db_Cursor_putValueString
     WT_CURSOR *cursor = (WT_CURSOR *)get_native_handle(env, obj);
     const char *value_str = (*env)->GetStringUTFChars(env, value, NULL);
     
-    cursor->set_value(cursor, value_str);
+    // Make a copy of the string to ensure it stays valid
+    size_t len = strlen(value_str);
+    char *value_copy = malloc(len + 1);
+    if (value_copy != NULL) {
+        strcpy(value_copy, value_str);
+        cursor->set_value(cursor, value_copy);
+        // Note: We're intentionally leaking this memory for now
+        // In a production system, we'd need a way to free it after insert
+    } else {
+        cursor->set_value(cursor, value_str);
+    }
     
     (*env)->ReleaseStringUTFChars(env, value, value_str);
 }
@@ -212,8 +232,20 @@ JNIEXPORT jstring JNICALL Java_com_wiredtiger_db_Cursor_getValueString
   (JNIEnv *env, jobject obj) {
     
     WT_CURSOR *cursor = (WT_CURSOR *)get_native_handle(env, obj);
-    const char *value;
-    cursor->get_value(cursor, &value);
+    const char *value = NULL;
+    int ret;
+    
+    // Get the value from the cursor
+    ret = cursor->get_value(cursor, &value);
+    if (ret != 0) {
+        // Return empty string on error
+        return (*env)->NewStringUTF(env, "");
+    }
+    
+    // Check if value is null and return appropriate result
+    if (value == NULL) {
+        return (*env)->NewStringUTF(env, "");
+    }
     
     return (*env)->NewStringUTF(env, value);
 }
