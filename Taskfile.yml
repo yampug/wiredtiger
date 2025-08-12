@@ -5,6 +5,7 @@ vars:
     sh: echo "${JAVA_HOME:-$(/usr/libexec/java_home)}"
   WIREDTIGER_ROOT: "{{.PWD}}"
   JAVA_DIR: "{{.WIREDTIGER_ROOT}}/lang/java"
+  CRYSTAL_DIR: "{{.WIREDTIGER_ROOT}}/lang/crystal"
   JNI_INCLUDES: "-I{{.JAVA_HOME}}/include -I{{.JAVA_HOME}}/include/darwin"
 
 tasks:
@@ -94,12 +95,79 @@ tasks:
 
   # Build everything
   build-all:
-    desc: "Build complete WiredTiger Java bindings"
-    deps: [compile-jni, create-jar]
+    desc: "Build complete WiredTiger bindings (Java and Crystal)"
+    deps: [compile-jni, create-jar, build-crystal]
     cmds:
-      - echo "WiredTiger Java bindings built successfully!"
-      - echo "JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
-      - echo "JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
+      - echo "WiredTiger bindings built successfully!"
+      - echo "Java JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
+      - echo "Java JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
+      - echo "Crystal extension at {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib"
+      - echo "Crystal library at {{.CRYSTAL_DIR}}/build/wiredtiger_crystal"
+
+  # Crystal bindings tasks
+  # Clean Crystal bindings
+  clean-crystal:
+    desc: "Clean Crystal bindings build artifacts"
+    dir: "{{.CRYSTAL_DIR}}"
+    cmds:
+      - rm -rf build/ lib/ .crystal/
+      - rm -f wiredtiger_crystal
+
+  # Build Crystal C extension
+  build-crystal-ext:
+    desc: "Build Crystal C extension library"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-core]
+    cmds:
+      - mkdir -p build lib
+      - |
+        gcc -c -fPIC \
+          -I../../src/include \
+          -o build/libwiredtiger_crystal.o \
+          wiredtiger_crystal.c
+      - |
+        gcc -shared \
+          -o lib/libwiredtiger_crystal.dylib \
+          build/libwiredtiger_crystal.o \
+          -L../../.libs \
+          -lwiredtiger
+    sources:
+      - "wiredtiger_crystal.c"
+      - "../../.libs/libwiredtiger.dylib"
+    generates:
+      - "lib/libwiredtiger_crystal.dylib"
+
+  # Build Crystal library
+  build-crystal-lib:
+    desc: "Build Crystal library"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal-ext]
+    cmds:
+      - crystal build --release -o build/wiredtiger_crystal src/wiredtiger.cr
+    sources:
+      - "src/**/*.cr"
+      - "lib/libwiredtiger_crystal.dylib"
+    generates:
+      - "build/wiredtiger_crystal"
+
+  # Build Crystal bindings
+  build-crystal:
+    desc: "Build complete WiredTiger Crystal bindings"
+    deps: [build-crystal-lib]
+    cmds:
+      - echo "WiredTiger Crystal bindings built successfully!"
+      - echo "C extension at {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib"
+      - echo "Crystal library at {{.CRYSTAL_DIR}}/build/wiredtiger_crystal"
+
+  # Test Crystal bindings
+  test-crystal:
+    desc: "Test the Crystal bindings"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - crystal spec
 
   # Test the bindings
   test:
@@ -135,6 +203,12 @@ tasks:
       - echo ""
       - echo "=== Java JAR ==="
       - ls -la wiredtiger.jar 2>/dev/null || echo "JAR not built"
+      - echo ""
+      - echo "=== Crystal Extension Library ==="
+      - ls -la {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib 2>/dev/null || echo "Crystal extension not built"
+      - echo ""
+      - echo "=== Crystal Library ==="
+      - ls -la {{.CRYSTAL_DIR}}/build/wiredtiger_crystal 2>/dev/null || echo "Crystal library not built"
 
   # Clean everything
   clean:
@@ -142,6 +216,7 @@ tasks:
     cmds:
       - make clean || true
       - task: clean-java
+      - task: clean-crystal
       - rm -rf .libs/ build/ .wt-java-smoke/
       - rm -f wiredtiger.jar
 
@@ -168,13 +243,17 @@ tasks:
 
   # Package for distribution
   package:
-    desc: "Package Java bindings for distribution"
+    desc: "Package bindings for distribution (Java and Crystal)"
     deps: [build-all]
     cmds:
-      - mkdir -p dist/lib dist/include
+      - mkdir -p dist/lib dist/include dist/crystal
       - cp wiredtiger.jar dist/
       - cp {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib dist/lib/
       - cp .libs/libwiredtiger.dylib dist/lib/
       - cp {{.JAVA_DIR}}/com_wiredtiger_db_*.h dist/include/
+      - cp {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib dist/lib/
+      - cp -r {{.CRYSTAL_DIR}}/src dist/crystal/
+      - cp {{.CRYSTAL_DIR}}/shard.yml dist/crystal/
+      - cp {{.CRYSTAL_DIR}}/README.md dist/crystal/
       - echo "Distribution package created in dist/"
       - ls -la dist/
