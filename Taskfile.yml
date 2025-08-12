@@ -8,6 +8,10 @@ vars:
   CRYSTAL_DIR: "{{.WIREDTIGER_ROOT}}/lang/crystal"
   JNI_INCLUDES: "-I{{.JAVA_HOME}}/include -I{{.JAVA_HOME}}/include/darwin"
 
+# =============================================================================
+# CORE LIBRARY TASKS
+# =============================================================================
+
 tasks:
   # Build WiredTiger core library
   build-core:
@@ -20,6 +24,10 @@ tasks:
       - "src/**/*.h"
     generates:
       - ".libs/libwiredtiger.dylib"
+
+# =============================================================================
+# JAVA BINDINGS TASKS
+# =============================================================================
 
   # Clean Java bindings
   clean-java:
@@ -93,18 +101,41 @@ tasks:
     generates:
       - "../../wiredtiger.jar"
 
-  # Build everything
-  build-all:
-    desc: "Build complete WiredTiger bindings (Java and Crystal)"
-    deps: [compile-jni, create-jar, build-crystal]
+  # Build complete Java bindings
+  build-java:
+    desc: "Build complete WiredTiger Java bindings"
+    deps: [compile-jni, create-jar]
     cmds:
-      - echo "WiredTiger bindings built successfully!"
-      - echo "Java JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
-      - echo "Java JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
-      - echo "Crystal extension at {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib"
-      - echo "Crystal library at {{.CRYSTAL_DIR}}/build/wiredtiger_crystal"
+      - echo "WiredTiger Java bindings built successfully!"
+      - echo "JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
+      - echo "JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
 
-  # Crystal bindings tasks
+  # Test Java bindings
+  test-java:
+    desc: "Test the Java bindings using jbindingstest"
+    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
+    deps: [build-java]
+    env:
+      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - mkdir -p .wt-java-smoke
+      - gradle run -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+
+  # Run JUnit tests for Java
+  test-java-junit:
+    desc: "Run JUnit tests for Java bindings"
+    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
+    deps: [build-java]
+    env:
+      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+    cmds:
+      - mkdir -p .wt-java-smoke
+      - gradle test -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+
+# =============================================================================
+# CRYSTAL BINDINGS TASKS
+# =============================================================================
+
   # Clean Crystal bindings
   clean-crystal:
     desc: "Clean Crystal bindings build artifacts"
@@ -150,7 +181,7 @@ tasks:
     generates:
       - "build/wiredtiger_crystal"
 
-  # Build Crystal bindings
+  # Build complete Crystal bindings
   build-crystal:
     desc: "Build complete WiredTiger Crystal bindings"
     deps: [build-crystal-lib]
@@ -167,29 +198,33 @@ tasks:
     env:
       DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
     cmds:
-      - crystal spec
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}"
 
-  # Test the bindings
-  test:
-    desc: "Test the Java bindings using jbindingstest"
-    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
-    deps: [build-all]
-    env:
-      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
-    cmds:
-      - mkdir -p .wt-java-smoke
-      - gradle run -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+# =============================================================================
+# COMBINED TASKS
+# =============================================================================
 
-  # Run JUnit tests
-  test-junit:
-    desc: "Run JUnit tests for Java bindings"
-    dir: "{{.WIREDTIGER_ROOT}}/jbindingstest"
-    deps: [build-all]
-    env:
-      DYLD_LIBRARY_PATH: "{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+  # Build everything (Java + Crystal)
+  build-all:
+    desc: "Build complete WiredTiger bindings (Java and Crystal)"
+    deps: [build-java, build-crystal]
     cmds:
-      - mkdir -p .wt-java-smoke
-      - gradle test -Djava.library.path="{{.JAVA_DIR}}/.libs:{{.WIREDTIGER_ROOT}}/.libs"
+      - echo "WiredTiger bindings built successfully!"
+      - echo "Java JAR file at {{.WIREDTIGER_ROOT}}/wiredtiger.jar"
+      - echo "Java JNI library at {{.JAVA_DIR}}/.libs/libwiredtiger_java.dylib"
+      - echo "Crystal extension at {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib"
+      - echo "Crystal library at {{.CRYSTAL_DIR}}/build/wiredtiger_crystal"
+
+  # Test everything
+  test-all:
+    desc: "Test all bindings (Java and Crystal)"
+    deps: [test-java, test-crystal]
+    cmds:
+      - echo "All tests completed successfully!"
+
+# =============================================================================
+# UTILITY TASKS
+# =============================================================================
 
   # Show library information
   info:
@@ -229,17 +264,19 @@ tasks:
       - java -version
       - javac -version
       - gcc --version | head -1
+      - crystal --version || echo "Crystal not installed"
       - echo ""
       - echo "=== WiredTiger Configuration ==="
       - echo "Root {{.WIREDTIGER_ROOT}}"
       - echo "Java Dir {{.JAVA_DIR}}"
+      - echo "Crystal Dir {{.CRYSTAL_DIR}}"
       - echo ""
-      - echo "Environment ready for WiredTiger Java bindings development"
+      - echo "Environment ready for WiredTiger bindings development"
 
   # Development: quick rebuild and test
   dev:
     desc: "Quick development cycle: rebuild and test"
-    deps: [build-all, test]
+    deps: [build-all, test-all]
 
   # Package for distribution
   package:
@@ -257,3 +294,11 @@ tasks:
       - cp {{.CRYSTAL_DIR}}/README.md dist/crystal/
       - echo "Distribution package created in dist/"
       - ls -la dist/
+
+# =============================================================================
+# ALIASES FOR COMMON TASKS
+# =============================================================================
+
+  # Legacy aliases for backward compatibility
+  test: test-java
+  test-junit: test-java-junit

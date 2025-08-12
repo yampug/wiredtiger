@@ -1,0 +1,23 @@
+# Crystal build artifacts
+/build/
+/lib/
+*.dylib
+*.so
+*.dll
+
+# Test databases
+/tmp/
+
+# Crystal cache
+/.crystal/
+/.shards/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -10,8 +10,8 @@ require "../src/wiredtiger"
 # Test configuration
 Spec.before_each do
   # Clean up any test databases before each test
-  test_dir = File.join(Dir.tempdir, "wiredtiger_test_#{Random::Secure.hex(8)}")
-  Dir.mkdir(test_dir) unless Dir.exists?(test_dir)
+  test_dir = File.join("tmp", "wiredtiger_test_#{Random::Secure.hex(8)}")
+  Dir.mkdir_p(test_dir) unless Dir.exists?(test_dir)
   ENV["WIREDTIGER_TEST_DIR"] = test_dir
 end
 
