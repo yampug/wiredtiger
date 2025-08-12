@@ -7,15 +7,25 @@ public class Session {
         this.nativeHandle = handle;
     }
     
-    public void create(String uri, String config) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Create a table, index or other data source.
+     * @param uri URI for the object to create
+     * @param config Configuration string
+     */
+    public native void create(String uri, String config);
     
-    public Cursor open_cursor(String uri, Cursor to_dup, String config) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Open a cursor.
+     * @param uri URI of the object to open
+     * @param to_dup Cursor to duplicate (can be null)
+     * @param config Configuration string
+     * @return Cursor object
+     */
+    public native Cursor open_cursor(String uri, Cursor to_dup, String config);
     
-    public void close(String config) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Close the session.
+     * @param config Configuration string
+     */
+    public native void close(String config);
 }

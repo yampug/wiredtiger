@@ -7,11 +7,16 @@ public class Connection {
         this.nativeHandle = handle;
     }
     
-    public Session open_session(String config) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Open a session.
+     * @param config Configuration string
+     * @return Session object
+     */
+    public native Session open_session(String config);
     
-    public void close(String config) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Close the connection.
+     * @param config Configuration string
+     */
+    public native void close(String config);
 }

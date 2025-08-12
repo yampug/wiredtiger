@@ -7,31 +7,43 @@ public class Cursor {
         this.nativeHandle = handle;
     }
     
-    public void putKeyString(String key) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Set the cursor's string key.
+     * @param key Key string
+     */
+    public native void putKeyString(String key);
     
-    public void putValueString(String value) {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Set the cursor's string value.
+     * @param value Value string
+     */
+    public native void putValueString(String value);
     
-    public int insert() {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Insert a record.
+     * @return 0 on success, non-zero on error
+     */
+    public native int insert();
     
-    public void reset() {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Reset the cursor.
+     */
+    public native void reset();
     
-    public int search() {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Search for a record.
+     * @return 0 if found, WT_NOTFOUND if not found
+     */
+    public native int search();
     
-    public String getValueString() {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Get the cursor's string value.
+     * @return Value string
+     */
+    public native String getValueString();
     
-    public void close() {
-        throw new UnsupportedOperationException("Native implementation required");
-    }
+    /**
+     * Close the cursor.
+     */
+    public native void close();
 }
