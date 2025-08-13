@@ -232,6 +232,77 @@ tasks:
       - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib"
       - rm -rf testdb
 
+  # Build Crystal bindings with Address Sanitizer for memory safety
+  build-crystal-asan:
+    desc: "Build Crystal C extension with Address Sanitizer for memory safety checking"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-core]
+    cmds:
+      - mkdir -p build lib
+      - |
+        gcc -c -fPIC -fsanitize=address -g -O0 \
+          -I../../src/include \
+          -o build/libwiredtiger_crystal.o \
+          wiredtiger_crystal.c
+      - |
+        gcc -shared -fsanitize=address \
+          -o lib/libwiredtiger_crystal.dylib \
+          build/libwiredtiger_crystal.o \
+          -L../../.libs \
+          -lwiredtiger
+    sources:
+      - "wiredtiger_crystal.c"
+      - "../../.libs/libwiredtiger.dylib"
+    generates:
+      - "lib/libwiredtiger_crystal.dylib"
+
+  # Test Crystal bindings with Address Sanitizer
+  test-crystal-asan:
+    desc: "Test Crystal bindings with Address Sanitizer for memory safety"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal-asan]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+      ASAN_OPTIONS: "abort_on_error=1:print_stats=1"
+    cmds:
+      - echo "🧪 Running Crystal bindings with Address Sanitizer..."
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -fsanitize=address"
+
+  # Test Crystal bindings with Address Sanitizer (quick, assumes built)
+  test-crystal-asan-quick:
+    desc: "Quick test Crystal bindings with Address Sanitizer (assumes already built with ASan)"
+    dir: "{{.CRYSTAL_DIR}}"
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+      ASAN_OPTIONS: "abort_on_error=1:print_stats=1"
+    cmds:
+      - echo "🧪 Running Crystal bindings with Address Sanitizer (quick mode)..."
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -fsanitize=address"
+
+  # Run specific Crystal test with Address Sanitizer
+  test-crystal-asan-specific:
+    desc: "Run specific Crystal test file with Address Sanitizer"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal-asan]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+      ASAN_OPTIONS: "abort_on_error=1:print_stats=1"
+    cmds:
+      - echo "🧪 Running {{.CLI_ARGS}} with Address Sanitizer..."
+      - crystal spec --link-flags="-L{{.CRYSTAL_DIR}}/lib -fsanitize=address" {{.CLI_ARGS}}
+
+    # Memory safety stress test with Address Sanitizer
+  test-crystal-asan-stress:
+    desc: "Run memory safety stress test with Address Sanitizer"
+    dir: "{{.CRYSTAL_DIR}}"
+    deps: [build-crystal-asan]
+    env:
+      DYLD_LIBRARY_PATH: "{{.CRYSTAL_DIR}}/lib:{{.WIREDTIGER_ROOT}}/.libs"
+      ASAN_OPTIONS: "abort_on_error=1:print_stats=1"
+    cmds:
+      - echo "🧪 Running memory safety stress test..."
+      - crystal run --link-flags="-L{{.CRYSTAL_DIR}}/lib -fsanitize=address" memory_stress_test.cr
+
 # =============================================================================
 # COMBINED TASKS
 # =============================================================================
@@ -267,6 +338,22 @@ tasks:
     deps: [test-java, test-crystal-verbose]
     cmds:
       - echo "All tests completed successfully with verbose output!"
+
+  # Test Crystal bindings with memory safety checking
+  test-crystal-memory-safety:
+    desc: "Test Crystal bindings with comprehensive memory safety checking"
+    deps: [test-crystal-asan, test-crystal-asan-stress]
+    cmds:
+      - echo "🧪 Memory safety tests completed successfully!"
+      - echo "No memory access violations detected by Address Sanitizer!"
+
+  # Quick memory safety test (assumes already built with ASan)
+  test-crystal-memory-safety-quick:
+    desc: "Quick memory safety test (assumes already built with Address Sanitizer)"
+    deps: [test-crystal-asan-quick, test-crystal-asan-stress]
+    cmds:
+      - echo "🧪 Quick memory safety tests completed successfully!"
+      - echo "No memory access violations detected by Address Sanitizer!"
 
 # =============================================================================
 # UTILITY TASKS
@@ -354,6 +441,28 @@ tasks:
   crystal-test-quick: test-crystal-quick
   crystal-test-verbose: test-crystal-verbose
 
+  # Memory safety aliases
+  asan:
+    desc: "Alias for test-crystal-asan"
+    cmds:
+      - task: test-crystal-asan
+  asan-quick:
+    desc: "Alias for test-crystal-asan-quick"
+    cmds:
+      - task: test-crystal-asan-quick
+  asan-stress:
+    desc: "Alias for test-crystal-asan-stress"
+    cmds:
+      - task: test-crystal-asan-stress
+  memory-safety:
+    desc: "Alias for test-crystal-memory-safety"
+    cmds:
+      - task: test-crystal-memory-safety
+  memory-safety-quick:
+    desc: "Alias for test-crystal-memory-safety-quick"
+    cmds:
+      - task: test-crystal-memory-safety-quick
+
   # Documentation
   help:
     desc: "Show available tasks and their descriptions"
@@ -374,6 +483,15 @@ tasks:
       - echo "  test-crystal-quick - Quick test (assumes built)"
       - echo "  test-crystal-verbose - Test with verbose output (assumes built)"
       - echo "  test-crystal-custom-dir - Test with custom test directory"
+      - echo ""
+      - echo "=== Memory Safety Testing ==="
+      - echo "  build-crystal-asan - Build Crystal bindings with Address Sanitizer"
+      - echo "  test-crystal-asan - Test Crystal bindings with Address Sanitizer"
+      - echo "  test-crystal-asan-quick - Quick ASan test (assumes built)"
+      - echo "  test-crystal-asan-specific - Test specific file with ASan"
+      - echo "  test-crystal-asan-stress - Run memory safety stress test"
+      - echo "  test-crystal-memory-safety - Comprehensive memory safety testing"
+      - echo "  test-crystal-memory-safety-quick - Quick memory safety test"
       - echo ""
       - echo "=== Combined Tasks ==="
       - echo "  build-all      - Build all bindings"
