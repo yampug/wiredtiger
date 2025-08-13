@@ -411,6 +411,23 @@ tasks:
     desc: "Quick development cycle: rebuild and test"
     deps: [build-all, test-all]
 
+  # Cleanup and maintenance
+  clean-crystal:
+    desc: "Clean Crystal bindings build artifacts and temporary files"
+    dir: "{{.CRYSTAL_DIR}}"
+    cmds:
+      - echo "🧹 Cleaning Crystal bindings..."
+      - ./clean.sh
+      - echo "✅ Crystal bindings cleaned successfully!"
+
+  clean-all:
+    desc: "Clean all build artifacts and temporary files"
+    deps: [clean-crystal]
+    cmds:
+      - echo "🧹 Cleaning all build artifacts..."
+      - make clean || echo "No make clean target available"
+      - echo "✅ All build artifacts cleaned successfully!"
+
   # Package for distribution
   package:
     desc: "Package bindings for distribution (Java and Crystal)"
@@ -424,7 +441,7 @@ tasks:
       - cp {{.CRYSTAL_DIR}}/lib/libwiredtiger_crystal.dylib dist/lib/
       - cp -r {{.CRYSTAL_DIR}}/src dist/crystal/
       - cp {{.CRYSTAL_DIR}}/shard.yml dist/crystal/
-      - cp {{.CRYSTAL_DIR}}/README.md dist/crystal/
+      - cp {{.CRYSTAL_DIR}}/docs/README.md dist/crystal/
       - echo "Distribution package created in dist/"
       - ls -la dist/
 
@@ -492,6 +509,10 @@ tasks:
       - echo "  test-crystal-asan-stress - Run memory safety stress test"
       - echo "  test-crystal-memory-safety - Comprehensive memory safety testing"
       - echo "  test-crystal-memory-safety-quick - Quick memory safety test"
+      - echo ""
+      - echo "=== Cleanup and Maintenance ==="
+      - echo "  clean-crystal  - Clean Crystal bindings build artifacts"
+      - echo "  clean-all      - Clean all build artifacts and temporary files"
       - echo ""
       - echo "=== Combined Tasks ==="
       - echo "  build-all      - Build all bindings"

@@ -161,7 +161,7 @@ task test-crystal-verbose --link-flags="-Llang/crystal/lib -fsanitize=address"
 
 - [Memory Safety Guide](MEMORY_SAFETY.md) - Comprehensive memory safety best practices
 - [README](README.md) - General project documentation
-- [Taskfile Help](Taskfile.yml) - Complete task reference (`task help`)
+- [Taskfile Help](../../Taskfile.yml) - Complete task reference (`task help`)
 
 ## 🎯 Best Practices
 

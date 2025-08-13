@@ -1,23 +1,265 @@
-# Crystal build artifacts
+# =============================================================================
+# WiredTiger Crystal Bindings - Comprehensive .gitignore
+# =============================================================================
+
+# =============================================================================
+# CRYSTAL BUILD ARTIFACTS
+# =============================================================================
+
+# Build directories
 /build/
 /lib/
+/bin/
+/tmp/
+
+# Native libraries
 *.dylib
 *.so
 *.dll
+*.a
+*.o
 
-# Test databases
-/tmp/
-
-# Crystal cache
+# Crystal cache and dependencies
 /.crystal/
 /.shards/
+/shard.lock
 
-# OS files
+# =============================================================================
+# WIREDTIGER SPECIFIC
+# =============================================================================
+
+# Database files and directories
+/wiredtiger/
+*.wt
+*.wtcheckpoint
+*.wtlog
+*.wtmetadata
+*.wtbackup
+*.wtbackup.*
+
+# Backup directories
+/backup/
+/backups/
+*_backup/
+*_backup_*/
+
+# Checkpoint files
+*.wtcheckpoint
+*.wtcheckpoint.*
+
+# =============================================================================
+# PACKAGE AND DISTRIBUTION
+# =============================================================================
+
+# Package files
+*.tar.gz
+*.zip
+*.tar
+/dist/
+/packages/
+
+# Standalone package artifacts
+wiredtiger_crystal-*.tar.gz
+wiredtiger_crystal-*.zip
+
+# =============================================================================
+# DEVELOPMENT AND TESTING
+# =============================================================================
+
+# Test databases and temporary files
+/test_db/
+/test_database/
+/test_*/
+*_test/
+*_test_*/
+
+# Memory safety test artifacts
+memory_stress_test_*/
+asan_test_*/
+valgrind_*/
+
+# Test output and logs
+*.log
+*.out
+*.err
+test_*.log
+asan_*.log
+
+# =============================================================================
+# COMPILER AND BUILD TOOLS
+# =============================================================================
+
+# Object files
+*.o
+*.obj
+*.elf
+*.exe
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Compiler generated files
+*.gcno
+*.gcda
+*.gcov
+
+# =============================================================================
+# OPERATING SYSTEM
+# =============================================================================
+
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
 
-# IDE files
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# DEVELOPMENT ENVIRONMENTS
+# =============================================================================
+
+# IDEs and editors
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# =============================================================================
+# CRYSTAL SPECIFIC
+# =============================================================================
+
+# Crystal temporary files
+*.cr~
+*.cr.bak
+*.cr.tmp
+
+# Crystal documentation
+/doc/
+/docs/_site/
+
+# Crystal examples (if auto-generated)
+/examples/*.exe
+/examples/*.out
+
+# =============================================================================
+# MEMORY SAFETY TOOLS
+# =============================================================================
+
+# Address Sanitizer
+*.asan
+*.asan.*
+
+# Valgrind
+*.vg
+*.vg.*
+
+# Memory profiling
+*.massif
+*.massif.*
+
+# =============================================================================
+# MISCELLANEOUS
+# =============================================================================
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# Lock files
+*.lock
+*.pid
+
+# Core dumps
+core
+core.*
+*.core
+
+# =============================================================================
+# OVERRIDE: KEEP ESSENTIAL FILES
+# =============================================================================
+
+# Keep these files even if they match patterns above
+!shard.lock
+!wiredtiger_crystal.c
+!wiredtiger_crystal.h
+!build.sh
+!install.sh
+!uninstall.sh
+!package.sh
+!Makefile
+!shard.yml
+!.gitignore
+
+# =============================================================================
+# END OF .gitignore
+# =============================================================================
