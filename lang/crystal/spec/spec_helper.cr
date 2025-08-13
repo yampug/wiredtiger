@@ -41,7 +41,10 @@ module DatabaseFileVerifier
   # Gets a unique test database directory
   # @return [String] Unique path for this test
   def self.get_unique_test_dir : String
-    File.join("tmp", "wiredtiger_test_#{Random::Secure.hex(8)}")
+    path = File.join("tmp", "wiredtiger_test_#{Random::Secure.hex(8)}")
+    # Ensure the directory exists
+    Dir.mkdir_p(path) unless Dir.exists?(path)
+    path
   end
 end
 

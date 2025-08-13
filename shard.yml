@@ -1,0 +1,84 @@
+name: wiredtiger
+version: 1.0.0
+
+description: |
+  WiredTiger is a high-performance, scalable, NoSQL, open source platform for data management.
+  This repository includes the core C library and language bindings for Java and Crystal.
+
+authors:
+  - WiredTiger Team <support@wiredtiger.com>
+
+targets:
+  # Core WiredTiger library (C)
+  wiredtiger:
+    main: src/wiredtiger.c
+    target: libwiredtiger
+  
+  # Crystal bindings
+  wiredtiger-crystal:
+    main: lang/crystal/src/wiredtiger.cr
+    target: libwiredtiger_crystal
+
+dependencies:
+  # No external dependencies for the core library
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.5.0
+
+crystal: ">= 1.0.0"
+
+license: Apache-2.0
+
+repository:
+  type: git
+  url: https://github.com/yampug/wiredtiger.git
+
+homepage: https://github.com/wiredtiger/wiredtiger
+
+documentation: https://github.com/wiredtiger/wiredtiger/tree/main/lang/crystal
+
+scripts:
+  # Core library
+  build-core: |
+    ./configure
+    make -j4
+  
+  # Crystal bindings
+  build-crystal: |
+    cd lang/crystal
+    ./build.sh
+  
+  # Test Crystal bindings
+  test-crystal: |
+    cd lang/crystal
+    crystal spec
+  
+  # Install Crystal bindings
+  install-crystal: |
+    cd lang/crystal
+    ./install.sh
+  
+  # Clean everything
+  clean: |
+    make clean || true
+    cd lang/crystal && rm -rf build lib
+
+# Installation instructions
+install:
+  - "This repository contains the WiredTiger core library and language bindings."
+  - "For Crystal bindings: cd lang/crystal && ./install.sh"
+  - "For development: shards install && shards run build-crystal"
+
+# Build requirements
+build:
+  requires:
+    - "GCC or Clang compiler"
+    - "Crystal 1.0.0+ (for Crystal bindings)"
+    - "Java 11+ (for Java bindings)"
+  
+  instructions:
+    - "Core library: shards run build-core"
+    - "Crystal bindings: shards run build-crystal"
+    - "Run tests: shards run test-crystal"

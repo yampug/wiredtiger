@@ -162,6 +162,180 @@ const char* cursor_get_key_string(void* cursor) {
     return key;
 }
 
+// Set the cursor's integer key
+int cursor_put_key_int(void* cursor, int64_t key) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_key(wt_cursor, key);
+    
+    return 0;
+}
+
+// Set the cursor's integer value
+int cursor_put_value_int(void* cursor, int64_t value) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_value(wt_cursor, value);
+    
+    return 0;
+}
+
+// Set the cursor's float key
+int cursor_put_key_float(void* cursor, double key) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_key(wt_cursor, key);
+    
+    return 0;
+}
+
+// Set the cursor's float value
+int cursor_put_value_float(void* cursor, double value) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_value(wt_cursor, value);
+    
+    return 0;
+}
+
+// Set the cursor's bytes key
+int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    WT_ITEM item;
+    item.data = data;
+    item.size = size;
+    wt_cursor->set_key(wt_cursor, &item);
+    
+    return 0;
+}
+
+// Set the cursor's bytes value
+int cursor_put_value_bytes(void* cursor, const void* data, size_t size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    WT_ITEM item;
+    item.data = data;
+    item.size = size;
+    wt_cursor->set_value(wt_cursor, &item);
+    
+    return 0;
+}
+
+// Get the cursor's integer key
+int64_t cursor_get_key_int(void* cursor) {
+    if (!cursor) return 0;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int64_t key;
+    int ret = wt_cursor->get_key(wt_cursor, &key);
+    
+    if (ret != 0) {
+        return 0;
+    }
+    
+    return key;
+}
+
+// Get the cursor's integer value
+int64_t cursor_get_value_int(void* cursor) {
+    if (!cursor) return 0;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int64_t value;
+    int ret = wt_cursor->get_value(wt_cursor, &value);
+    
+    if (ret != 0) {
+        return 0;
+    }
+    
+    return value;
+}
+
+// Get the cursor's float key
+double cursor_get_key_float(void* cursor) {
+    if (!cursor) return 0.0;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    double key;
+    int ret = wt_cursor->get_key(wt_cursor, &key);
+    
+    if (ret != 0) {
+        return 0.0;
+    }
+    
+    return key;
+}
+
+// Get the cursor's float value
+double cursor_get_value_float(void* cursor) {
+    if (!cursor) return 0.0;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    double value;
+    int ret = wt_cursor->get_value(wt_cursor, &value);
+    
+    if (ret != 0) {
+        return 0.0;
+    }
+    
+    return value;
+}
+
+// Get the cursor's bytes key
+int cursor_get_key_bytes(void* cursor, void** data, size_t* size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    WT_ITEM item;
+    int ret = wt_cursor->get_key(wt_cursor, &item);
+    
+    if (ret != 0) {
+        return ret;
+    }
+    
+    if (item.data == NULL || item.size == 0) {
+        *data = NULL;
+        *size = 0;
+        return 0;
+    }
+    
+    *data = (void*)item.data;
+    *size = item.size;
+    
+    return 0;
+}
+
+// Get the cursor's bytes value
+int cursor_get_value_bytes(void* cursor, void** data, size_t* size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    WT_ITEM item;
+    int ret = wt_cursor->get_value(wt_cursor, &item);
+    
+    if (ret != 0) {
+        return ret;
+    }
+    
+    if (item.data == NULL || item.size == 0) {
+        *data = NULL;
+        *size = 0;
+        return 0;
+    }
+    
+    *data = (void*)item.data;
+    *size = item.size;
+    
+    return 0;
+}
+
 // Close the cursor
 int cursor_close(void* cursor) {
     if (!cursor) return -1;

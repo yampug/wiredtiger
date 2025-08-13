@@ -1,6 +1,9 @@
 #ifndef WIREDTIGER_CRYSTAL_H
 #define WIREDTIGER_CRYSTAL_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -29,6 +32,21 @@ const char* cursor_get_key_string(void* cursor);
 int cursor_close(void* cursor);
 int cursor_next(void* cursor);
 int cursor_prev(void* cursor);
+
+// Extended data type support
+int cursor_put_key_int(void* cursor, int64_t key);
+int cursor_put_value_int(void* cursor, int64_t value);
+int cursor_put_key_float(void* cursor, double key);
+int cursor_put_value_float(void* cursor, double value);
+int cursor_put_key_bytes(void* cursor, const void* data, size_t size);
+int cursor_put_value_bytes(void* cursor, const void* data, size_t size);
+
+int64_t cursor_get_key_int(void* cursor);
+int64_t cursor_get_value_int(void* cursor);
+double cursor_get_key_float(void* cursor);
+double cursor_get_value_float(void* cursor);
+int cursor_get_key_bytes(void* cursor, void** data, size_t* size);
+int cursor_get_value_bytes(void* cursor, void** data, size_t* size);
 
 #ifdef __cplusplus
 }
