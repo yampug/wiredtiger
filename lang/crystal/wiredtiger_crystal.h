@@ -26,6 +26,11 @@ int session_create(void* session, const char* uri, const char* config);
 void* session_open_cursor(void* session, const char* uri, void* to_dup, const char* config);
 int session_close(void* session, const char* config);
 
+// Checkpoint and backup operations
+int session_checkpoint(void* session, const char* config);
+void* session_open_backup_cursor(void* session, const char* config);
+int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config);
+
 // Cursor operations
 int cursor_put_key_string(void* cursor, const char* key);
 int cursor_put_value_string(void* cursor, const char* value);
@@ -62,6 +67,19 @@ double cursor_get_key_float(void* cursor);
 double cursor_get_value_float(void* cursor);
 int cursor_get_key_bytes(void* cursor, void** data, size_t* size);
 int cursor_get_value_bytes(void* cursor, void** data, size_t* size);
+
+// Safe close operations (null-safe)
+int cursor_safe_close(void* cursor);
+int session_safe_close(void* session);
+int connection_safe_close(void* conn);
+
+// Safe operation wrappers
+int cursor_safe_operation(void* cursor, int (*operation)(void*));
+int session_safe_operation(void* session, int (*operation)(void*));
+
+// Memory management utilities
+char* safe_strdup(const char* str);
+void safe_free(void* ptr);
 
 #ifdef __cplusplus
 }

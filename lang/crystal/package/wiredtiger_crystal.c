@@ -7,6 +7,8 @@
 
 // Open a connection to a WiredTiger database
 void* crystal_wiredtiger_open(const char* home, const char* config) {
+    if (!home) return NULL;
+    
     WT_CONNECTION *conn;
     int ret = wiredtiger_open(home, NULL, config, &conn);
     
@@ -49,7 +51,7 @@ int connection_close(void* conn, const char* config) {
 
 // Create a table, index or other data source
 int session_create(void* session, const char* uri, const char* config) {
-    if (!session) return -1;
+    if (!session || !uri) return -1;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     int ret = wt_session->create(wt_session, uri, config);
@@ -59,7 +61,7 @@ int session_create(void* session, const char* uri, const char* config) {
 
 // Open a cursor
 void* session_open_cursor(void* session, const char* uri, void* to_dup, const char* config) {
-    if (!session) return NULL;
+    if (!session || !uri) return NULL;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     WT_CURSOR *cursor;
@@ -99,7 +101,7 @@ void* session_open_backup_cursor(void* session, const char* config) {
 
 // Truncate a collection
 int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config) {
-    if (!session) return -1;
+    if (!session || !uri) return -1;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     int ret = wt_session->truncate(wt_session, uri, (WT_CURSOR*)start, (WT_CURSOR*)stop, config);
@@ -149,7 +151,7 @@ int session_checkpoint(void* session, const char* config) {
 
 // Set the cursor's string key
 int cursor_put_key_string(void* cursor, const char* key) {
-    if (!cursor) return -1;
+    if (!cursor || !key) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_key(wt_cursor, key);
@@ -159,7 +161,7 @@ int cursor_put_key_string(void* cursor, const char* key) {
 
 // Set the cursor's string value
 int cursor_put_value_string(void* cursor, const char* value) {
-    if (!cursor) return -1;
+    if (!cursor || !value) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_value(wt_cursor, value);
@@ -189,7 +191,7 @@ int cursor_put_value_int(void* cursor, int64_t value) {
 
 // Set the cursor's bytes key
 int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || size == 0) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_key(wt_cursor, data, size);
@@ -199,7 +201,7 @@ int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
 
 // Set the cursor's bytes value
 int cursor_put_value_bytes(void* cursor, const void* data, size_t size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || size == 0) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_value(wt_cursor, data, size);
@@ -293,6 +295,36 @@ int cursor_prev(void* cursor) {
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     int ret = wt_cursor->prev(wt_cursor);
+    
+    return ret;
+}
+
+// Safe cursor close with error handling
+int cursor_safe_close(void* cursor) {
+    if (!cursor) return 0; // Already closed or invalid
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int ret = wt_cursor->close(wt_cursor);
+    
+    return ret;
+}
+
+// Safe session close with error handling
+int session_safe_close(void* session) {
+    if (!session) return 0; // Already closed or invalid
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->close(wt_session, NULL);
+    
+    return ret;
+}
+
+// Safe connection close with error handling
+int connection_safe_close(void* conn) {
+    if (!conn) return 0; // Already closed or invalid
+    
+    WT_CONNECTION *wt_conn = (WT_CONNECTION*)conn;
+    int ret = wt_conn->close(wt_conn, NULL);
     
     return ret;
 }

@@ -45,6 +45,11 @@ int cursor_close(void* cursor);
 int cursor_next(void* cursor);
 int cursor_prev(void* cursor);
 
+// Safe close operations (null-safe)
+int cursor_safe_close(void* cursor);
+int session_safe_close(void* session);
+int connection_safe_close(void* conn);
+
 #ifdef __cplusplus
 }
 #endif

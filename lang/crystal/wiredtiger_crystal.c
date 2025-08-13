@@ -7,6 +7,8 @@
 
 // Open a connection to a WiredTiger database
 void* crystal_wiredtiger_open(const char* home, const char* config) {
+    if (!home) return NULL;
+    
     WT_CONNECTION *conn;
     int ret = wiredtiger_open(home, NULL, config, &conn);
     
@@ -49,7 +51,7 @@ int connection_close(void* conn, const char* config) {
 
 // Create a table, index or other data source
 int session_create(void* session, const char* uri, const char* config) {
-    if (!session) return -1;
+    if (!session || !uri) return -1;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     int ret = wt_session->create(wt_session, uri, config);
@@ -59,7 +61,7 @@ int session_create(void* session, const char* uri, const char* config) {
 
 // Open a cursor
 void* session_open_cursor(void* session, const char* uri, void* to_dup, const char* config) {
-    if (!session) return NULL;
+    if (!session || !uri) return NULL;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     WT_CURSOR *cursor;
@@ -112,9 +114,44 @@ int session_rollback_transaction(void* session, const char* config) {
     return ret;
 }
 
+// Create a checkpoint
+int session_checkpoint(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->checkpoint(wt_session, config);
+    
+    return ret;
+}
+
+// Open a backup cursor
+void* session_open_backup_cursor(void* session, const char* config) {
+    if (!session) return NULL;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    WT_CURSOR *cursor;
+    int ret = wt_session->open_cursor(wt_session, "backup:", NULL, config, &cursor);
+    
+    if (ret != 0) {
+        return NULL;
+    }
+    
+    return (void*)cursor;
+}
+
+// Truncate a collection
+int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config) {
+    if (!session || !uri) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->truncate(wt_session, uri, (WT_CURSOR*)start, (WT_CURSOR*)stop, config);
+    
+    return ret;
+}
+
 // Set the cursor's string key
 int cursor_put_key_string(void* cursor, const char* key) {
-    if (!cursor) return -1;
+    if (!cursor || !key) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_key(wt_cursor, key);
@@ -124,7 +161,7 @@ int cursor_put_key_string(void* cursor, const char* key) {
 
 // Set the cursor's string value
 int cursor_put_value_string(void* cursor, const char* value) {
-    if (!cursor) return -1;
+    if (!cursor || !value) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_value(wt_cursor, value);
@@ -154,7 +191,7 @@ int cursor_remove(void* cursor) {
 
 // Modify the current record
 int cursor_modify(void* cursor, void* entries, int nentries) {
-    if (!cursor) return -1;
+    if (!cursor || !entries || nentries <= 0) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     WT_MODIFY *wt_entries = (WT_MODIFY*)entries;
@@ -175,7 +212,7 @@ int cursor_insert(void* cursor) {
 
 // Calculate modify operations
 int crystal_calc_modify(void* session, const void* oldv, const void* newv, size_t maxdiff, void* entries, int* nentriesp) {
-    if (!session || !oldv || !newv || !entries || !nentriesp) return -1;
+    if (!session || !oldv || !newv || !entries || !nentriesp || maxdiff == 0) return -1;
     
     WT_SESSION *wt_session = (WT_SESSION*)session;
     WT_ITEM *wt_oldv = (WT_ITEM*)oldv;
@@ -305,7 +342,7 @@ int cursor_put_value_float(void* cursor, double value) {
 
 // Set the cursor's bytes key
 int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || size == 0) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     WT_ITEM item;
@@ -318,7 +355,7 @@ int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
 
 // Set the cursor's bytes value
 int cursor_put_value_bytes(void* cursor, const void* data, size_t size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || size == 0) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     WT_ITEM item;
@@ -391,7 +428,7 @@ double cursor_get_value_float(void* cursor) {
 
 // Get the cursor's bytes key
 int cursor_get_key_bytes(void* cursor, void** data, size_t* size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || !size) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     WT_ITEM item;
@@ -415,7 +452,7 @@ int cursor_get_key_bytes(void* cursor, void** data, size_t* size) {
 
 // Get the cursor's bytes value
 int cursor_get_value_bytes(void* cursor, void** data, size_t* size) {
-    if (!cursor) return -1;
+    if (!cursor || !data || !size) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     WT_ITEM item;
@@ -465,4 +502,71 @@ int cursor_prev(void* cursor) {
     int ret = wt_cursor->prev(wt_cursor);
     
     return ret;
+}
+
+// Safe cursor close with error handling
+int cursor_safe_close(void* cursor) {
+    if (!cursor) return 0; // Already closed or invalid
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int ret = wt_cursor->close(wt_cursor);
+    
+    return ret;
+}
+
+// Safe session close with error handling
+int session_safe_close(void* session) {
+    if (!session) return 0; // Already closed or invalid
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->close(wt_session, NULL);
+    
+    return ret;
+}
+
+// Safe connection close with error handling
+int connection_safe_close(void* conn) {
+    if (!conn) return 0; // Already closed or invalid
+    
+    WT_CONNECTION *wt_conn = (WT_CONNECTION*)conn;
+    int ret = wt_conn->close(wt_conn, NULL);
+    
+    return ret;
+}
+
+// Safe cursor operation wrapper with error handling
+int cursor_safe_operation(void* cursor, int (*operation)(void*)) {
+    if (!cursor || !operation) return -1;
+    
+    int ret = operation(cursor);
+    
+    return ret;
+}
+
+// Safe session operation wrapper with error handling
+int session_safe_operation(void* session, int (*operation)(void*)) {
+    if (!session || !operation) return -1;
+    
+    int ret = operation(session);
+    
+    return ret;
+}
+
+// Memory-safe string copy (if needed for future use)
+char* safe_strdup(const char* str) {
+    if (!str) return NULL;
+    
+    size_t len = strlen(str);
+    char* new_str = (char*)malloc(len + 1);
+    if (!new_str) return NULL;
+    
+    strcpy(new_str, str);
+    return new_str;
+}
+
+// Safe memory cleanup
+void safe_free(void* ptr) {
+    if (ptr) {
+        free(ptr);
+    }
 }

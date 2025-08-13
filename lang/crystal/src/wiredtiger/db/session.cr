@@ -42,6 +42,9 @@ module WiredTiger
         
         # Checkpoint support
         fun session_checkpoint(session : Void*, config : Char*) : Int32
+        
+        # Safe close operations
+        fun session_safe_close(session : Void*) : Int32
       end
       
       # Create a table, index or other data source
@@ -287,11 +290,22 @@ module WiredTiger
       # Close this session
       # @param config [String?] Configuration string (optional)
       def close(config : String? = nil)
+        return if closed? # Already closed
+        
         config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
         
-        ret = LibSession.session_close(@native_handle, config_ptr)
+        # Use safe close function that handles null pointers gracefully
+        ret = LibSession.session_safe_close(@native_handle)
         raise WiredTigerException.new("Failed to close session") if ret != 0
         
+        @native_handle = Pointer(Void).null
+      end
+      
+      # Safe close that can be called multiple times without error
+      def safe_close
+        return if closed? # Already closed
+        
+        LibSession.session_safe_close(@native_handle)
         @native_handle = Pointer(Void).null
       end
       

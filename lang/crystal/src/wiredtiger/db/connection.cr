@@ -14,6 +14,9 @@ module WiredTiger
       lib LibConnection
         fun connection_open_session(conn : Void*, config : Char*) : Void*
         fun connection_close(conn : Void*, config : Char*) : Int32
+        
+        # Safe close operations
+        fun connection_safe_close(conn : Void*) : Int32
       end
       
       # Open a session on this connection
@@ -31,11 +34,22 @@ module WiredTiger
       # Close this connection
       # @param config [String?] Configuration string (optional)
       def close(config : String? = nil)
+        return if closed? # Already closed
+        
         config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
         
-        ret = LibConnection.connection_close(@native_handle, config_ptr)
+        # Use safe close function that handles null pointers gracefully
+        ret = LibConnection.connection_safe_close(@native_handle)
         raise WiredTigerException.new("Failed to close connection") if ret != 0
         
+        @native_handle = Pointer(Void).null
+      end
+      
+      # Safe close that can be called multiple times without error
+      def safe_close
+        return if closed? # Already closed
+        
+        LibConnection.connection_safe_close(@native_handle)
         @native_handle = Pointer(Void).null
       end
       

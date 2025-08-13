@@ -3,250 +3,204 @@
 require "./src/wiredtiger"
 require "file_utils"
 
-# Example demonstrating WiredTiger Advanced Cursor Operations
-puts "🚀 WiredTiger Advanced Cursor Operations Example"
-puts "=================================================="
+# Example demonstrating WiredTiger Advanced Cursor Operations with Memory Safety
+puts "🚀 WiredTiger Advanced Cursor Operations Example (Memory Safe)"
+puts "==============================================================="
 
 # Create a unique database directory
 db_dir = "/tmp/wiredtiger_advanced_cursor_#{Random::Secure.hex(8)}"
 Dir.mkdir_p(db_dir)
 
-begin
-  # Open connection
-  puts "\n📁 Opening database at: #{db_dir}"
-  conn = WiredTiger::WiredTiger.open(db_dir, "create")
-  session = conn.open_session
-  
-  puts "✅ Connection and session created successfully"
-  
-  # Create tables
-  puts "\n🏗️  Creating tables..."
-  session.create("table:users", "key_format=S,value_format=S")
-  session.create("table:logs", "key_format=S,value_format=S")
-  puts "✅ Tables created successfully"
-  
-  # Example 1: Basic Remove Operation
-  puts "\n🗑️  Example 1: Basic Remove Operation"
-  puts "Inserting test data and then removing a record..."
-  
-  cursor = session.open_cursor("table:users")
-  
-  # Insert test data
-  cursor.put_key_string("user1")
-  cursor.put_value_string("John Doe")
-  cursor.insert
-  
-  cursor.put_key_string("user2")
-  cursor.put_value_string("Jane Smith")
-  cursor.insert
-  
-  cursor.put_key_string("user3")
-  cursor.put_value_string("Bob Johnson")
-  cursor.insert
-  
-  cursor.close
-  
-  # Display initial data
-  puts "  📊 Initial users:"
-  cursor = session.open_cursor("table:users")
-  while cursor.next == 0
-    user_id = cursor.get_key_string
-    name = cursor.get_value_string
-    puts "    #{user_id}: #{name}"
-  end
-  cursor.close
-  
-  # Remove user2
-  cursor = session.open_cursor("table:users")
-  cursor.put_key_string("user2")
-  cursor.search
-  cursor.remove
-  cursor.close
-  
-  puts "  ✅ Removed user2"
-  
-  # Display updated data
-  puts "  📊 Users after removal:"
-  cursor = session.open_cursor("table:users")
-  while cursor.next == 0
-    user_id = cursor.get_key_string
-    name = cursor.get_value_string
-    puts "    #{user_id}: #{name}"
-  end
-  cursor.close
-  
-  # Example 2: Simple Modify Operation (Insert)
-  puts "\n✏️  Example 2: Simple Modify Operation (Insert)"
-  puts "Inserting text into an existing value..."
-  
-  cursor = session.open_cursor("table:users")
-  cursor.put_key_string("user1")
-  cursor.search
-  current_name = cursor.get_value_string
-  puts "  📝 Current name: '#{current_name}'"
-  
-  # Begin transaction with snapshot isolation (required for modify)
-  session.begin_transaction("isolation=snapshot")
-  
-  # Insert " Jr." at the end of the name
-  insert_modify = WiredTiger::DB::Modify.insert(" Jr.", current_name.size)
-  cursor.modify([insert_modify])
-  
-  session.commit_transaction
-  cursor.close
-  
-  # Verify the modification
-  cursor = session.open_cursor("table:users")
-  cursor.put_key_string("user1")
-  cursor.search
-  updated_name = cursor.get_value_string
-  puts "  ✅ Updated name: '#{updated_name}'"
-  cursor.close
-  
-  # Example 3: Modify Operation (Replace)
-  puts "\n✏️  Example 3: Modify Operation (Replace)"
-  puts "Replacing part of a value..."
-  
-  cursor = session.open_cursor("table:users")
-  cursor.put_key_string("user3")
-  cursor.search
-  current_name = cursor.get_value_string
-  puts "  📝 Current name: '#{current_name}'"
-  
-  # Begin transaction
-  session.begin_transaction("isolation=snapshot")
-  
-  # Replace "Bob" with "Robert"
-  replace_modify = WiredTiger::DB::Modify.replace("Robert", 0, 3)
-  cursor.modify([replace_modify])
-  
-  session.commit_transaction
-  cursor.close
-  
-  # Verify the modification
-  cursor = session.open_cursor("table:users")
-  cursor.put_key_string("user3")
-  cursor.search
-  updated_name = cursor.get_value_string
-  puts "  ✅ Updated name: '#{updated_name}'"
-  cursor.close
-  
-  # Example 4: Complex Log Management
-  puts "\n📝 Example 4: Complex Log Management"
-  puts "Managing log entries with modify operations..."
-  
-  cursor = session.open_cursor("table:logs")
-  
-  # Insert initial log entry
-  cursor.put_key_string("log_001")
-  cursor.put_value_string("User login successful")
-  cursor.insert
-  
-  cursor.close
-  
-  # Display initial log
-  puts "  📊 Initial log:"
-  cursor = session.open_cursor("table:logs")
-  cursor.put_key_string("log_001")
-  cursor.search
-  log_entry = cursor.get_value_string
-  puts "    log_001: #{log_entry}"
-  cursor.close
-  
-  # Begin transaction for complex modifications
-  session.begin_transaction("isolation=snapshot")
-  
-  cursor = session.open_cursor("table:logs")
-  cursor.put_key_string("log_001")
-  cursor.search
-  
-  # Multiple modifications:
-  # 1. Insert timestamp at the beginning
-  # 2. Replace "successful" with "completed"
-  # 3. Add status code at the end
-  mods = [
-    WiredTiger::DB::Modify.insert("[2024-08-13] ", 0),
-    WiredTiger::DB::Modify.replace("completed", 25, 9),
-    WiredTiger::DB::Modify.insert(" (200)", log_entry.size + 16)  # Adjust for previous modifications
-  ]
-  
-  cursor.modify(mods)
-  cursor.close
-  
-  session.commit_transaction
-  
-  # Verify complex modification
-  puts "  📊 Updated log:"
-  cursor = session.open_cursor("table:logs")
-  cursor.put_key_string("log_001")
-  cursor.search
-  updated_log = cursor.get_value_string
-  puts "    log_001: #{updated_log}"
-  cursor.close
-  
-  # Example 5: Error Handling
-  puts "\n⚠️  Example 5: Error Handling"
-  puts "Demonstrating proper error handling for modify operations..."
+# Memory-safe database operations with guaranteed cleanup
+def run_advanced_cursor_example(db_dir : String)
+  conn = nil
+  session = nil
   
   begin
-    # Try to modify without a transaction (should fail)
+    # Open connection
+    puts "\n📁 Opening database at: #{db_dir}"
+    conn = WiredTiger::WiredTiger.open(db_dir, "create")
+    session = conn.open_session
+    
+    puts "✅ Connection and session created successfully"
+    
+    # Create tables
+    puts "\n🏗️  Creating tables..."
+    session.create("table:users", "key_format=S,value_format=S")
+    session.create("table:logs", "key_format=S,value_format=S")
+    puts "✅ Tables created successfully"
+    
+    # Example 1: Basic Remove Operation
+    puts "\n🗑️  Example 1: Basic Remove Operation"
+    puts "Inserting test data and then removing a record..."
+    
+    # Use ensure block for guaranteed cursor cleanup
     cursor = session.open_cursor("table:users")
-    cursor.put_key_string("user1")
-    cursor.search
+    begin
+      # Insert test data
+      cursor.put_key_string("user1")
+      cursor.put_value_string("John Doe")
+      cursor.insert
+      
+      cursor.put_key_string("user2")
+      cursor.put_value_string("Jane Smith")
+      cursor.insert
+      
+      cursor.put_key_string("user3")
+      cursor.put_value_string("Bob Johnson")
+      cursor.insert
+    ensure
+      cursor.safe_close  # Always cleaned up, even with exceptions
+    end
     
-    insert_modify = WiredTiger::DB::Modify.insert(" Test", 0)
-    cursor.modify([insert_modify])
+    # Display initial data with safe cursor management
+    puts "  📊 Initial users:"
+    display_users(session, "table:users")
     
-    cursor.close
-    puts "  ❌ This should have failed!"
+    # Remove user2 with safe cursor management
+    cursor = session.open_cursor("table:users")
+    begin
+      cursor.put_key_string("user2")
+      cursor.search
+      cursor.remove
+      puts "  ✅ Removed user2"
+    ensure
+      cursor.safe_close
+    end
+    
+    # Display updated data
+    puts "  📊 Users after removal:"
+    display_users(session, "table:users")
+    
+    # Example 2: Simple Modify Operation (Insert)
+    puts "\n✏️  Example 2: Simple Modify Operation (Insert)"
+    puts "Inserting text into an existing value..."
+    
+    cursor = session.open_cursor("table:users")
+    begin
+      cursor.put_key_string("user1")
+      cursor.search
+      current_name = cursor.get_value_string
+      puts "  📝 Current name: '#{current_name}'"
+      
+      # Begin transaction with snapshot isolation (required for modify)
+      session.begin_transaction("isolation=snapshot")
+      
+      # Insert " Jr." at the end of the name
+      insert_modify = WiredTiger::DB::Modify.insert(" Jr.", current_name.size)
+      cursor.modify([insert_modify])
+      
+      session.commit_transaction
+    ensure
+      cursor.safe_close
+    end
+    
+    # Verify the modification
+    puts "  📊 Users after modification:"
+    display_users(session, "table:users")
+    
+    # Example 3: Complex Modify Operations
+    puts "\n🔧 Example 3: Complex Modify Operations"
+    puts "Performing multiple modifications in sequence..."
+    
+    cursor = session.open_cursor("table:users")
+    begin
+      cursor.put_key_string("user3")
+      cursor.search
+      current_name = cursor.get_value_string
+      puts "  📝 Current name: '#{current_name}'"
+      
+      session.begin_transaction("isolation=snapshot")
+      
+      # Multiple modifications: remove "Bob", insert "Robert", append " III"
+      modifications = [
+        WiredTiger::DB::Modify.remove(0, 3),           # Remove "Bob"
+        WiredTiger::DB::Modify.insert("Robert", 0),     # Insert "Robert" at beginning
+        WiredTiger::DB::Modify.insert(" III", current_name.size - 3)  # Append " III"
+      ]
+      
+      cursor.modify(modifications)
+      session.commit_transaction
+      
+      puts "  ✅ Applied complex modifications"
+    ensure
+      cursor.safe_close
+    end
+    
+    # Verify complex modifications
+    puts "  📊 Users after complex modifications:"
+    display_users(session, "table:users")
+    
+    # Example 4: Working with Binary Data (Memory Safe)
+    puts "\n🔒 Example 4: Working with Binary Data (Memory Safe)"
+    puts "Storing and retrieving binary data with automatic memory management..."
+    
+    cursor = session.open_cursor("table:users")
+    begin
+      # Store binary data (memory managed automatically)
+      cursor.put_key_string("binary_user")
+      binary_data = Bytes[0x48, 0x65, 0x6C, 0x6C, 0x6F]  # "Hello" in hex
+      cursor.put_value_bytes(binary_data)
+      cursor.insert
+      
+      puts "  💾 Stored binary data: #{binary_data.hexstring}"
+      
+      # Retrieve binary data (memory managed automatically)
+      cursor.reset
+      cursor.put_key_string("binary_user")
+      if cursor.search == 0
+        retrieved_data = cursor.get_value_bytes
+        puts "  📥 Retrieved binary data: #{retrieved_data.hexstring}"
+        puts "  📏 Data size: #{retrieved_data.size} bytes"
+      end
+    ensure
+      cursor.safe_close
+    end
+    
+    puts "\n🎉 All examples completed successfully!"
     
   rescue ex : WiredTiger::DB::WiredTigerException
-    puts "  ✅ Correctly caught exception: #{ex.message}"
-    cursor.close if cursor
-  end
-  
-  # Final display of all data
-  puts "\n📊 Final Database State:"
-  
-  puts "  👥 Users:"
-  cursor = session.open_cursor("table:users")
-  while cursor.next == 0
-    user_id = cursor.get_key_string
-    name = cursor.get_value_string
-    puts "    #{user_id}: #{name}"
-  end
-  cursor.close
-  
-  puts "  📝 Logs:"
-  cursor = session.open_cursor("table:logs")
-  while cursor.next == 0
-    log_id = cursor.get_key_string
-    log_entry = cursor.get_value_string
-    puts "    #{log_id}: #{log_entry}"
-  end
-  cursor.close
-  
-  puts "\n🎉 All advanced cursor operation examples completed successfully!"
-  
-rescue ex : Exception
-  puts "\n❌ Error occurred: #{ex.message}"
-  puts ex.backtrace.join("\n")
-  
-ensure
-  # Clean up
-  puts "\n🧹 Cleaning up..."
-  if session && !session.closed?
-    session.close
-  end
-  if conn && !conn.closed?
-    conn.close
-  end
-  
-  # Remove database directory
-  if Dir.exists?(db_dir)
-    FileUtils.rm_rf(db_dir)
-    puts "✅ Database directory removed: #{db_dir}"
+    puts "❌ Database error: #{ex.message}"
+    raise ex
+    
+  rescue ex : Exception
+    puts "❌ Unexpected error: #{ex.message}"
+    raise ex
+    
+  ensure
+    # Guaranteed cleanup regardless of success or failure
+    puts "\n🧹 Cleaning up resources..."
+    session.safe_close if session
+    conn.safe_close if conn
+    puts "✅ Resources cleaned up successfully"
   end
 end
 
-puts "\n✨ Advanced cursor operations example completed!"
+# Helper method for displaying users with safe cursor management
+def display_users(session : WiredTiger::DB::Session, table_name : String)
+  cursor = session.open_cursor(table_name)
+  begin
+    while cursor.next == 0
+      user_id = cursor.get_key_string
+      name = cursor.get_value_string
+      puts "    #{user_id}: #{name}"
+    end
+  ensure
+    cursor.safe_close  # Always cleaned up
+  end
+end
+
+# Run the example with memory safety
+begin
+  run_advanced_cursor_example(db_dir)
+rescue ex : Exception
+  puts "❌ Example failed: #{ex.message}"
+  exit 1
+ensure
+  # Clean up database directory
+  if Dir.exists?(db_dir)
+    puts "\n🗑️  Cleaning up database directory: #{db_dir}"
+    FileUtils.rm_rf(db_dir)
+    puts "✅ Database directory cleaned up"
+  end
+end
