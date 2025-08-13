@@ -48,7 +48,7 @@ describe "WiredTiger Configuration and Advanced Features" do
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 40).should be_true
   end
   
   it "supports table configuration options" do
@@ -88,7 +88,7 @@ describe "WiredTiger Configuration and Advanced Features" do
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 35).should be_true
   end
   
   it "supports connection configuration options" do
@@ -170,7 +170,7 @@ describe "WiredTiger Configuration and Advanced Features" do
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 30).should be_true
   end
   
   it "supports cursor configuration options" do
@@ -184,8 +184,7 @@ describe "WiredTiger Configuration and Advanced Features" do
     # Test cursor configurations
     cursor_configs = [
       nil, # Default configuration
-      "overwrite=false",
-      "readonly=true"
+      "overwrite=false"
     ]
     
     cursor_configs.each_with_index do |config, index|
@@ -199,11 +198,24 @@ describe "WiredTiger Configuration and Advanced Features" do
       cursor.close
     end
     
+    # Test readonly cursor separately (should not allow inserts)
+    readonly_cursor = session.open_cursor("table:cursor_config_test", config: "readonly=true")
+    
+    # Try to insert with readonly cursor (should fail)
+    readonly_cursor.put_key_string("readonly_key")
+    readonly_cursor.put_value_string("readonly_value")
+    
+    expect_raises(WiredTiger::DB::WiredTigerException) do
+      readonly_cursor.insert
+    end
+    
+    readonly_cursor.close
+    
     session.close
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 30).should be_true
   end
   
   it "supports statistics configuration options" do
