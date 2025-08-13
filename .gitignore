@@ -1,3 +1,7 @@
+# =============================================================================
+# WiredTiger Repository - Comprehensive .gitignore
+# =============================================================================
+
 # Editor files
 *.swp
 
@@ -76,6 +80,43 @@ WT_TEST/
 /lang/python/wiredtiger_wrap.c
 _wiredtiger.pyd
 
+# =============================================================================
+# JAVA ARTIFACTS
+# =============================================================================
+
+# Java bindings
+*.jar
+/temp_java_build/
+/jbindingstest/
+
+# =============================================================================
+# TASK RUNNER & BUILD TOOLS
+# =============================================================================
+
+# Task runner cache
+.task/
+.taskrc
+
+# =============================================================================
+# BUILD ARTIFACTS & GENERATED FILES
+# =============================================================================
+
+# Compiled libraries and executables
+.libs/
+/build_posix/
+/build_win/
+
+# Generated/backup files
+configure~
+wiredtiger_config.h
+wiredtiger_ext.h
+wt
+
+# Distribution and generated files
+/dist/
+/dist/*
+!dist/plantuml.jar  # Keep only essential dist files
+
 # Binaries
 **/bench/wtperf/wtperf
 **/csuite/test_incr_backup
@@ -150,3 +191,46 @@ _wiredtiger.pyd
 **/test/salvage/t
 **/test/syscall/test_wt2336_base
 **/test/thread/t
+
+# =============================================================================
+# CRYSTAL BINDINGS
+# =============================================================================
+
+# Crystal build artifacts (delegated to lang/crystal/.gitignore)
+/lang/crystal/build/
+/lang/crystal/lib/
+/lang/crystal/bin/
+/lang/crystal/tmp/
+/lang/crystal/*.dylib
+/lang/crystal/*.so
+/lang/crystal/*.dll
+/lang/crystal/*.a
+/lang/crystal/*.o
+/lang/crystal/*.tar.gz
+/lang/crystal/*.zip
+/lang/crystal/*.tar
+/lang/crystal/wiredtiger/
+/lang/crystal/*.wt
+/lang/crystal/*.wtcheckpoint
+/lang/crystal/*.wtlog
+/lang/crystal/*.wtmetadata
+/lang/crystal/*.wtbackup
+/lang/crystal/.crystal/
+/lang/crystal/.shards/
+/lang/crystal/*.log
+/lang/crystal/*.out
+/lang/crystal/*.err
+/lang/crystal/*.tmp
+/lang/crystal/*.temp
+/lang/crystal/*.bak
+/lang/crystal/*.backup
+/lang/crystal/*.old
+/lang/crystal/*.orig
+/lang/crystal/*.rej
+/lang/crystal/.DS_Store
+/lang/crystal/Thumbs.db
+/lang/crystal/*~
+
+# =============================================================================
+# END OF .gitignore
+# =============================================================================

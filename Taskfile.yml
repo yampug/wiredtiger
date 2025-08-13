@@ -420,13 +420,17 @@ tasks:
       - ./clean.sh
       - echo "✅ Crystal bindings cleaned successfully!"
 
-  clean-all:
-    desc: "Clean all build artifacts and temporary files"
-    deps: [clean-crystal]
+  clean-repo:
+    desc: "Clean entire repository build artifacts and temporary files"
     cmds:
-      - echo "🧹 Cleaning all build artifacts..."
-      - make clean || echo "No make clean target available"
-      - echo "✅ All build artifacts cleaned successfully!"
+      - echo "🧹 Cleaning entire repository..."
+      - ./clean-repo.sh
+      - echo "✅ Repository cleaned successfully!"
+
+  clean-all:
+    desc: "Clean all build artifacts and temporary files (alias for clean-repo)"
+    cmds:
+      - task: clean-repo
 
   # Package for distribution
   package:
@@ -512,7 +516,8 @@ tasks:
       - echo ""
       - echo "=== Cleanup and Maintenance ==="
       - echo "  clean-crystal  - Clean Crystal bindings build artifacts"
-      - echo "  clean-all      - Clean all build artifacts and temporary files"
+      - echo "  clean-repo     - Clean entire repository build artifacts"
+      - echo "  clean-all      - Clean all build artifacts (alias for clean-repo)"
       - echo ""
       - echo "=== Combined Tasks ==="
       - echo "  build-all      - Build all bindings"

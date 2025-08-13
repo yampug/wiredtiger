@@ -27,3 +27,13 @@ WiredTiger licensing information can be found at:
 For general questions and discussion, there's a WiredTiger group:
 
 	http://groups.google.com/group/wiredtiger-users
+
+Repository Maintenance
+====================
+
+This repository includes Crystal and Java bindings. To keep it clean and organized:
+
+- **Quick cleanup**: `./clean-repo.sh` or `task clean-repo`
+- **Crystal bindings**: `task clean-crystal`
+- **Full documentation**: [REPOSITORY_MAINTENANCE.md](REPOSITORY_MAINTENANCE.md)
+- **Crystal-specific**: [lang/crystal/docs/MAINTENANCE.md](lang/crystal/docs/MAINTENANCE.md)
