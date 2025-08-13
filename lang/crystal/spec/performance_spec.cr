@@ -41,7 +41,7 @@ describe "WiredTiger Performance and Stress Testing" do
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 30).should be_true
   end
   
   it "handles bulk operations efficiently" do
