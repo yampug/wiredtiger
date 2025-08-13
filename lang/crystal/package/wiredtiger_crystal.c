@@ -82,6 +82,31 @@ int session_close(void* session, const char* config) {
     return ret;
 }
 
+// Open a backup cursor
+void* session_open_backup_cursor(void* session, const char* config) {
+    if (!session) return NULL;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    WT_CURSOR *cursor;
+    int ret = wt_session->open_cursor(wt_session, "backup:", NULL, config, &cursor);
+    
+    if (ret != 0) {
+        return NULL;
+    }
+    
+    return (void*)cursor;
+}
+
+// Truncate a collection
+int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->truncate(wt_session, uri, (WT_CURSOR*)start, (WT_CURSOR*)stop, config);
+    
+    return ret;
+}
+
 // Set the cursor's string key
 int cursor_put_key_string(void* cursor, const char* key) {
     if (!cursor) return -1;

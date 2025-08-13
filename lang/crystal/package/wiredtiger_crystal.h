@@ -16,6 +16,8 @@ int connection_close(void* conn, const char* config);
 // Table and cursor operations
 int session_create(void* session, const char* uri, const char* config);
 void* session_open_cursor(void* session, const char* uri, void* to_dup, const char* config);
+void* session_open_backup_cursor(void* session, const char* config);
+int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config);
 int session_close(void* session, const char* config);
 
 // Cursor operations

@@ -8,6 +8,7 @@ require "./wiredtiger/db/wired_tiger"
 require "./wiredtiger/db/connection"
 require "./wiredtiger/db/session"
 require "./wiredtiger/db/cursor"
+require "./wiredtiger/db/backup_cursor"
 
 module WiredTiger
   module DB
@@ -42,4 +43,5 @@ module WiredTiger
   alias Session = DB::Session
   alias Cursor = DB::Cursor
   alias WiredTigerException = DB::WiredTigerException
+  alias BackupCursor = DB::BackupCursor
 end

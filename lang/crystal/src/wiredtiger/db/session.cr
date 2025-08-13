@@ -16,6 +16,7 @@ module WiredTiger
       end
       
       # FFI function definitions for session operations
+      @[Link("wiredtiger_crystal", ldflags: "-L/Users/bob/repos/wiredtiger/lang/crystal/package/lib -lwiredtiger_crystal")]
       lib LibSession
         fun session_create(session : Void*, uri : Char*, config : Char*) : Int32
         fun session_open_cursor(session : Void*, uri : Char*, to_dup : Void*, config : Char*) : Void*
@@ -32,6 +33,12 @@ module WiredTiger
         # Statistics support
         fun session_open_statistics_cursor(session : Void*, uri : Char*, cursorp : Void**) : Int32
         fun cursor_get_statistics_values(cursor : Void*, desc : Char**, pvalue : Char**, value : Int64*) : Int32
+        
+        # Backup support
+        fun session_open_backup_cursor(session : Void*, config : Char*) : Void*
+        
+        # Truncate support
+        fun session_truncate(session : Void*, uri : Char*, start : Void*, stop : Void*, config : Char*) : Int32
       end
       
       # Create a table, index or other data source
@@ -234,6 +241,34 @@ module WiredTiger
         ensure
           cursor.close
         end
+      end
+      
+      # Open a backup cursor for creating database backups
+      # @param config [String?] Backup configuration (e.g., "target=(\"log:\")" for incremental backup)
+      # @return [BackupCursor] A cursor for iterating through backup files
+      def create_backup(config : String? = nil) : BackupCursor
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        cursor_ptr = LibSession.session_open_backup_cursor(@native_handle, config_ptr)
+        raise WiredTigerException.new("Failed to open backup cursor") if cursor_ptr.null?
+        
+        BackupCursor.new(cursor_ptr)
+      end
+      
+      # Truncate a range of data in a collection
+      # @param uri [String] The URI of the collection to truncate
+      # @param start [String?] The start key for truncation (inclusive)
+      # @param stop [String?] The stop key for truncation (exclusive)
+      # @param config [String?] Configuration string (optional)
+      # @raise [WiredTigerException] if truncation fails
+      def truncate(uri : String, start : String? = nil, stop : String? = nil, config : String? = nil)
+        uri_ptr = uri.to_unsafe.as(Pointer(Char))
+        start_ptr = start ? start.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        stop_ptr = stop ? stop.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        ret = LibSession.session_truncate(@native_handle, uri_ptr, start_ptr, stop_ptr, config_ptr)
+        raise WiredTigerException.new("Failed to truncate collection: #{uri}") if ret != 0
       end
       
       # Close this session
