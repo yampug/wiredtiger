@@ -42,6 +42,9 @@ module WiredTiger
         fun cursor_get_value_float(cursor : Void*) : Float64
         fun cursor_get_key_bytes(cursor : Void*, data : Void**, size : LibC::SizeT*) : Int32
         fun cursor_get_value_bytes(cursor : Void*, data : Void**, size : LibC::SizeT*) : Int32
+        
+        # Statistics support
+        fun cursor_get_statistics_values(cursor : Void*, desc : Char**, pvalue : Char**, value : Int64*) : Int32
       end
       
       # Set the cursor's string key

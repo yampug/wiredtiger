@@ -1,6 +1,7 @@
 
 
 require "./modify"
+require "./statistics"
 
 module WiredTiger
   module DB
@@ -27,6 +28,10 @@ module WiredTiger
         
         # Modify calculation
         fun crystal_calc_modify(session : Void*, oldv : Void*, newv : Void*, maxdiff : LibC::SizeT, entries : Void*, nentriesp : Int32*) : Int32
+        
+        # Statistics support
+        fun session_open_statistics_cursor(session : Void*, uri : Char*, cursorp : Void**) : Int32
+        fun cursor_get_statistics_values(cursor : Void*, desc : Char**, pvalue : Char**, value : Int64*) : Int32
       end
       
       # Create a table, index or other data source
@@ -121,6 +126,114 @@ module WiredTiger
         end
         
         result
+      end
+      
+      # Open a statistics cursor for database-wide statistics
+      # @param config [String?] Statistics configuration (e.g., "fast", "all", "clear")
+      # @return [StatisticsCursor] A cursor for iterating through statistics
+      def open_statistics_cursor(config : String? = nil) : StatisticsCursor
+        uri = "statistics:"
+        config_str = config ? ",statistics=(#{config})" : ""
+        
+        cursor_ptr = Pointer(Pointer(Void)).malloc(1)
+        ret = LibSession.session_open_statistics_cursor(@native_handle, uri.to_unsafe.as(Pointer(Char)), cursor_ptr)
+        raise WiredTigerException.new("Failed to open statistics cursor") if ret != 0
+        
+        cursor_handle = cursor_ptr.value
+        raise WiredTigerException.new("Failed to get cursor pointer") if cursor_handle.null?
+        StatisticsCursor.new(cursor_handle)
+      end
+      
+      # Open a statistics cursor for a specific table
+      # @param table_name [String] The name of the table
+      # @param config [String?] Statistics configuration (e.g., "fast", "all", "clear")
+      # @return [StatisticsCursor] A cursor for iterating through table statistics
+      def open_table_statistics_cursor(table_name : String, config : String? = nil) : StatisticsCursor
+        uri = "statistics:table:#{table_name}"
+        config_str = config ? ",statistics=(#{config})" : ""
+        
+        cursor_ptr = Pointer(Pointer(Void)).malloc(1)
+        ret = LibSession.session_open_statistics_cursor(@native_handle, uri.to_unsafe.as(Pointer(Char)), cursor_ptr)
+        raise WiredTigerException.new("Failed to open table statistics cursor") if ret != 0
+        
+        cursor_handle = cursor_ptr.value
+        raise WiredTigerException.new("Failed to get cursor pointer") if cursor_handle.null?
+        StatisticsCursor.new(cursor_handle)
+      end
+      
+      # Open a statistics cursor for session statistics
+      # @param config [String?] Statistics configuration (e.g., "fast", "all", "clear")
+      # @return [StatisticsCursor] A cursor for iterating through session statistics
+      def open_session_statistics_cursor(config : String? = nil) : StatisticsCursor
+        uri = "statistics:session"
+        config_str = config ? ",statistics=(#{config})" : ""
+        
+        cursor_ptr = Pointer(Pointer(Void)).malloc(1)
+        ret = LibSession.session_open_statistics_cursor(@native_handle, uri.to_unsafe.as(Pointer(Char)), cursor_ptr)
+        raise WiredTigerException.new("Failed to open session statistics cursor") if ret != 0
+        
+        cursor_handle = cursor_ptr.value
+        raise WiredTigerException.new("Failed to get cursor pointer") if cursor_handle.null?
+        StatisticsCursor.new(cursor_handle)
+      end
+      
+      # Get a specific statistic value by key
+      # @param stat_key [Int32] The statistic key to retrieve
+      # @param config [String?] Statistics configuration
+      # @return [Int64?] The statistic value or nil if not found
+      def get_statistic(stat_key : Int32, config : String? = nil) : Int64?
+        cursor = open_statistics_cursor(config)
+        
+        begin
+          cursor.each do |stat|
+            if stat.key == stat_key
+              return stat.value
+            end
+          end
+          nil
+        ensure
+          cursor.close
+        end
+      end
+      
+      # Get all statistics as a hash
+      # @param config [String?] Statistics configuration
+      # @return [Hash(String, Int64)] Hash mapping descriptions to values
+      def get_all_statistics(config : String? = nil) : Hash(String, Int64)
+        cursor = open_statistics_cursor(config)
+        
+        begin
+          cursor.to_h
+        ensure
+          cursor.close
+        end
+      end
+      
+      # Get table statistics as a hash
+      # @param table_name [String] The name of the table
+      # @param config [String?] Statistics configuration
+      # @return [Hash(String, Int64)] Hash mapping descriptions to values
+      def get_table_statistics(table_name : String, config : String? = nil) : Hash(String, Int64)
+        cursor = open_table_statistics_cursor(table_name, config)
+        
+        begin
+          cursor.to_h
+        ensure
+          cursor.close
+        end
+      end
+      
+      # Get session statistics as a hash
+      # @param config [String?] Statistics configuration
+      # @return [Hash(String, Int64)] Hash mapping descriptions to values
+      def get_session_statistics(config : String? = nil) : Hash(String, Int64)
+        cursor = open_session_statistics_cursor(config)
+        
+        begin
+          cursor.to_h
+        ensure
+          cursor.close
+        end
       end
       
       # Close this session

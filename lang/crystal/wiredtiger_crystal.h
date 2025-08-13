@@ -44,6 +44,10 @@ int cursor_prev(void* cursor);
 // Modify calculation
 int crystal_calc_modify(void* session, const void* oldv, const void* newv, size_t maxdiff, void* entries, int* nentriesp);
 
+// Statistics support
+int session_open_statistics_cursor(void* session, const char* uri, void** cursorp);
+int cursor_get_statistics_values(void* cursor, const char** desc, const char** pvalue, int64_t* value);
+
 // Extended data type support
 int cursor_put_key_int(void* cursor, int64_t key);
 int cursor_put_value_int(void* cursor, int64_t value);

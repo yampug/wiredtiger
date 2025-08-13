@@ -187,6 +187,32 @@ int crystal_calc_modify(void* session, const void* oldv, const void* newv, size_
     return ret;
 }
 
+// Open a statistics cursor
+int session_open_statistics_cursor(void* session, const char* uri, void** cursorp) {
+    if (!session || !uri || !cursorp) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    WT_CURSOR *wt_cursor;
+    
+    int ret = wt_session->open_cursor(wt_session, uri, NULL, NULL, &wt_cursor);
+    if (ret == 0) {
+        *cursorp = (void*)wt_cursor;
+    }
+    
+    return ret;
+}
+
+// Get statistics values from a cursor
+int cursor_get_statistics_values(void* cursor, const char** desc, const char** pvalue, int64_t* value) {
+    if (!cursor || !desc || !pvalue || !value) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    
+    int ret = wt_cursor->get_value(wt_cursor, desc, pvalue, value);
+    
+    return ret;
+}
+
 // Reset the cursor
 int cursor_reset(void* cursor) {
     if (!cursor) return -1;
