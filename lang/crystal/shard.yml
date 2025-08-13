@@ -5,6 +5,14 @@ description: |
   Crystal bindings for the WiredTiger embedded database engine.
   Provides a high-level interface for database operations including
   connections, sessions, cursors, and transactions.
+  
+  Features:
+  - Native Crystal bindings to WiredTiger C library
+  - High-level database operations API
+  - Connection, session, and cursor management
+  - Support for tables, indexes, and LSM trees
+  - Transaction support
+  - Error handling with Crystal exceptions
 
 authors:
   - WiredTiger Team <support@wiredtiger.com>
@@ -28,7 +36,7 @@ license: Apache-2.0
 
 repository:
   type: git
-  url: https://github.com/wiredtiger/wiredtiger.git
+  url: https://github.com/yampug/wiredtiger.git
 
 homepage: https://github.com/wiredtiger/wiredtiger
 
@@ -38,3 +46,26 @@ scripts:
   test: crystal spec
   build: crystal build --release src/wiredtiger.cr
   clean: rm -rf build lib
+  install: ./install.sh
+  uninstall: ./uninstall.sh
+
+# Installation instructions for users
+install:
+  - "This shard requires the WiredTiger C library to be installed on your system."
+  - "IMPORTANT: This is a fork with Crystal bindings. The original wiredtiger/wiredtiger doesn't have Crystal support."
+  - "Installation options:"
+  - "  1. Use this fork directly: git: https://github.com/yampug/wiredtiger.git"
+  - "  2. Install system-wide: run 'shards run install' from this directory"
+  - "  3. Use as local dependency: path: /path/to/this/directory"
+
+# Build requirements
+build:
+  requires:
+    - "WiredTiger C library (libwiredtiger)"
+    - "GCC or Clang compiler"
+    - "Crystal 1.0.0+"
+  
+  instructions:
+    - "The native library will be built automatically during installation"
+    - "Run 'shards run build' to rebuild the native library"
+    - "Run 'shards run clean' to clean build artifacts"

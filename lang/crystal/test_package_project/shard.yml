@@ -1,0 +1,20 @@
+name: test-package-project
+version: 0.1.0
+
+description: |
+  Test project to verify the standalone WiredTiger Crystal bindings package works correctly.
+
+authors:
+  - Test Developer <test@example.com>
+
+dependencies:
+  wiredtiger:
+    path: ../package
+
+crystal: ">= 1.0.0"
+
+license: MIT
+
+targets:
+  test:
+    main: src/test.cr

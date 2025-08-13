@@ -41,11 +41,30 @@ fi
 # Check if WiredTiger core library exists
 if [ ! -f "$WIREDTIGER_ROOT/.libs/libwiredtiger.dylib" ] && [ ! -f "$WIREDTIGER_ROOT/.libs/libwiredtiger.so" ]; then
     echo -e "${YELLOW}Warning: WiredTiger core library not found${NC}"
-    echo "Building core library first..."
-    cd "$WIREDTIGER_ROOT"
-    ./configure
-    make -j4
-    cd "$CRYSTAL_DIR"
+    echo "Looking for core library in parent directories..."
+    
+    # Try to find the core library in parent directories
+    PARENT_DIRS=("$WIREDTIGER_ROOT/../.." "$WIREDTIGER_ROOT/.." "$WIREDTIGER_ROOT")
+    FOUND_LIB=""
+    
+    for dir in "${PARENT_DIRS[@]}"; do
+        if [ -f "$dir/.libs/libwiredtiger.dylib" ] || [ -f "$dir/.libs/libwiredtiger.so" ]; then
+            FOUND_LIB="$dir"
+            echo "Found WiredTiger core library in: $dir"
+            break
+        fi
+    done
+    
+    if [ -z "$FOUND_LIB" ]; then
+        echo -e "${RED}Error: WiredTiger core library not found${NC}"
+        echo "Please ensure the WiredTiger core library is built and available."
+        echo "You can build it by running:"
+        echo "  cd /path/to/wiredtiger"
+        echo "  ./configure && make"
+        exit 1
+    fi
+    
+    WIREDTIGER_ROOT="$FOUND_LIB"
 fi
 
 # Create build directories
@@ -70,7 +89,7 @@ fi
 echo -e "\n${YELLOW}Building shared library...${NC}"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     LIB_EXT="dylib"
-    # Build with proper install name and rpath for current directory structure
+    # Build with proper install name and rpath for standalone package
     gcc -shared \
         -o "$LIB_DIR/libwiredtiger_crystal.$LIB_EXT" \
         "$BUILD_DIR/libwiredtiger_crystal.o" \

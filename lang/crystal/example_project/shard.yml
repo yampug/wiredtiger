@@ -1,0 +1,23 @@
+name: wiredtiger-example
+version: 0.1.0
+
+description: |
+  Example project demonstrating how to use WiredTiger Crystal bindings.
+  This shows how to integrate the bindings into your own Crystal project.
+
+authors:
+  - Example Developer <dev@example.com>
+
+dependencies:
+  wiredtiger:
+    path: ../
+    # Alternative: use the standalone package
+    # path: /path/to/wiredtiger-crystal-1.0.0
+
+crystal: ">= 1.0.0"
+
+license: MIT
+
+targets:
+  example:
+    main: src/example.cr

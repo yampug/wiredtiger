@@ -1,0 +1,47 @@
+name: wiredtiger
+version: 1.0.0
+
+description: |
+  Crystal bindings for the WiredTiger embedded database engine.
+  Provides a high-level interface for database operations including
+  connections, sessions, cursors, and transactions.
+
+authors:
+  - WiredTiger Team <support@wiredtiger.com>
+
+targets:
+  wiredtiger_crystal:
+    main: src/wiredtiger.cr
+
+dependencies:
+  # No external dependencies required for basic functionality
+
+development_dependencies:
+  ameba:
+    github: crystal-ameba/ameba
+    version: ~> 1.5.0
+
+crystal: ">= 1.0.0"
+
+license: Apache-2.0
+
+repository:
+  type: git
+  url: https://github.com/yampug/wiredtiger.git
+
+homepage: https://github.com/wiredtiger/wiredtiger
+
+documentation: https://github.com/wiredtiger/wiredtiger/tree/main/lang/crystal
+
+scripts:
+  test: crystal spec
+  build: ./build.sh
+  clean: rm -rf build lib
+  install: ./install.sh
+  uninstall: ./uninstall.sh
+
+# Installation instructions
+install:
+  - "This shard requires the WiredTiger C library to be installed on your system."
+  - "Run 'shards run build' to build the native library."
+  - "Run 'shards run install' to install system-wide."

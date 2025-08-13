@@ -2,48 +2,99 @@
 
 Native Crystal bindings for the WiredTiger embedded database engine.
 
+**⚠️ Important Note**: This is a fork of the official WiredTiger repository that adds Crystal bindings. The original [wiredtiger/wiredtiger](https://github.com/wiredtiger/wiredtiger) repository does not include Crystal support.
+
+## Features
+
+- **Native Crystal Bindings**: Direct bindings to the WiredTiger C library
+- **High-Level API**: Easy-to-use interface for database operations
+- **Full WiredTiger Support**: Tables, indexes, LSM trees, transactions
+- **Error Handling**: Crystal exceptions with proper error messages
+- **Cross-Platform**: Works on macOS, Linux, and other Unix-like systems
+
 ## Quick Start
 
 ### Prerequisites
 - Crystal 1.0.0+
 - GCC/Clang compiler
 - WiredTiger development libraries
-- [Task](https://taskfile.dev/) (optional)
 
-### Build
-```bash
-# From WiredTiger root directory
-task build-all
+## Installation
 
-# Or from the crystal directory
-make
+### Option 1: Install from Standalone Package (Recommended)
+
+1. **Download the package**:
+   ```bash
+   # From the repository
+   cd lang/crystal
+   ./package.sh
+   ```
+   
+   This creates a standalone package that can be distributed and installed easily.
+
+2. **Use the package**:
+   ```yaml
+   dependencies:
+     wiredtiger:
+       path: /path/to/wiredtiger-crystal-1.0.0
+   ```
+
+### Option 2: Install from this fork
+
+Add to your project's `shard.yml`:
+
+```yaml
+dependencies:
+  wiredtiger:
+    git: https://github.com/yampug/wiredtiger.git
+    subdirectory: lang/crystal
 ```
 
-### Test
-```bash
-# From the crystal directory
-make test
+Then install:
 
-# Or using Crystal directly
-crystal spec
+```bash
+shards install
 ```
 
-### Use in Your Project
+**Note**: This method requires the WiredTiger core library to be built in the repository.
+
+### Option 3: Install System-Wide
+
+```bash
+# Clone this fork (not the original)
+git clone https://github.com/yampug/wiredtiger.git
+cd wiredtiger/lang/crystal
+
+# Install the bindings system-wide
+./install.sh
+```
+
+This will install the native library and Crystal sources to `/usr/local` (or `~/.local` if not running as root).
+
+### Option 4: Use as Local Dependency
+
+```yaml
+dependencies:
+  wiredtiger:
+    path: /path/to/wiredtiger/lang/crystal
+```
+
+### Usage
 
 ```crystal
 require "wiredtiger"
 
 # Open a connection
-conn = WiredTiger.open("mydb", "create")
+conn = WiredTiger::WiredTiger.open("mydb", "create")
 
 # Open a session
 session = conn.open_session
 
 # Create a table
-session.create("table:test", "key_format=S,value_format=S")
+session.create("table:users", "key_format=S,value_format=S")
 
 # Open a cursor
-cursor = session.open_cursor("table:test")
+cursor = session.open_cursor("table:users")
 
 # Insert data
 cursor.put_key_string("key1")
@@ -63,206 +114,221 @@ session.close
 conn.close
 ```
 
-## Installation
-
-### From Source
-```bash
-git clone https://github.com/wiredtiger/wiredtiger.git
-cd wiredtiger/lang/crystal
-make install
-```
-
-### Using Shards
-Add to your `shard.yml`:
-```yaml
-dependencies:
-  wiredtiger:
-    github: wiredtiger/wiredtiger
-    version: ~> 1.0.0
-```
-
 ## API Reference
 
-### WiredTiger
+### Main Classes
+
+#### WiredTiger
 Main class for database operations.
 
-- `WiredTiger.open(home : String, config : String? = nil) : Connection`
+```crystal
+# Open a connection
+conn = WiredTiger.open(home : String, config : String? = nil) : Connection
+```
 
-### Connection
+#### Connection
 Manages database connections and sessions.
 
-- `open_session(config : String? = nil) : Session`
-- `close(config : String? = nil)`
-- `closed? : Bool`
+```crystal
+# Open a new session
+session = conn.open_session(config : String? = nil) : Session
 
-### Session
+# Close the connection
+conn.close(config : String? = nil)
+
+# Check if closed
+conn.closed? : Bool
+```
+
+#### Session
 Manages database sessions and cursors.
 
-- `create(uri : String, config : String? = nil)`
-- `open_cursor(uri : String, to_dup : Cursor? = nil, config : String? = nil) : Cursor`
-- `close(config : String? = nil)`
-- `closed? : Bool`
+```crystal
+# Create a table
+session.create(name : String, config : String) : Nil
 
-### Cursor
-Handles data operations and navigation.
+# Open a cursor
+cursor = session.open_cursor(name : String, config : String? = nil) : Cursor
 
-- `put_key_string(key : String)`
-- `put_value_string(value : String)`
-- `insert : Int32`
-- `reset`
-- `search : Int32`
-- `get_value_string : String`
-- `next : Int32`
-- `prev : Int32`
-- `close`
-- `closed? : Bool`
+# Close the session
+session.close : Nil
 
-## Error Handling
+# Check if closed
+session.closed? : Bool
+```
 
-The bindings use `WiredTigerException` for error handling:
+#### Cursor
+Manages database cursors for data operations.
+
+```crystal
+# Insert operations
+cursor.put_key_string(key : String) : Nil
+cursor.put_value_string(value : String) : Nil
+cursor.insert : Int32
+
+# Search operations
+cursor.put_key_string(key : String) : Nil
+cursor.search : Int32
+
+# Iteration
+cursor.next : Int32
+cursor.prev : Int32
+cursor.reset : Nil
+
+# Data retrieval
+cursor.get_key_string : String
+cursor.get_value_string : String
+
+# Close the cursor
+cursor.close : Nil
+
+# Check if closed
+cursor.closed? : Bool
+```
+
+### Error Handling
+
+The bindings use Crystal exceptions for error handling:
 
 ```crystal
 begin
-  conn = WiredTiger.open("nonexistent")
-rescue ex : WiredTigerException
-  puts "Error: #{ex.message}"
+  conn = WiredTiger.open("mydb", "create")
+  # ... database operations
+rescue ex : WiredTiger::DB::WiredTigerException
+  puts "Database error: #{ex.message}"
 end
 ```
 
-## Error Codes
+### Configuration Strings
 
-Common WiredTiger error codes are available as constants:
+WiredTiger configuration strings are passed directly to the C library:
 
 ```crystal
-WiredTiger::DB::Error::WT_NOTFOUND      # -31803
-WiredTiger::DB::Error::WT_PANIC         # -31804
-WiredTiger::DB::Error::WT_RUN_RECOVERY  # -31805
-WiredTiger::DB::Error::WT_CACHE_FULL    # -31806
-WiredTiger::DB::Error::WT_DEADLOCK      # -31808
-WiredTiger::DB::Error::WT_ROLLBACK      # -31809
+# Create a table with string key/value format
+session.create("table:users", "key_format=S,value_format=S")
+
+# Create a table with integer key and string value
+session.create("table:counts", "key_format=i,value_format=S")
+
+# Open connection with specific configuration
+conn = WiredTiger.open("mydb", "create,log=(enabled=true)")
 ```
 
 ## Examples
 
-### Basic CRUD Operations
-```crystal
-require "wiredtiger"
+See the `example_project/` directory for comprehensive examples demonstrating:
 
-# Open database
-conn = WiredTiger.open("testdb", "create")
-session = conn.open_session
-
-# Create table
-session.create("table:users", "key_format=S,value_format=S")
-
-# Insert data
-cursor = session.open_cursor("table:users")
-cursor.put_key_string("user1")
-cursor.put_value_string("John Doe")
-cursor.insert
-cursor.close
-
-# Query data
-cursor = session.open_cursor("table:users")
-cursor.put_key_string("user1")
-if cursor.search == 0
-  puts "User: #{cursor.get_value_string}"
-end
-cursor.close
-
-# Clean up
-session.close
-conn.close
-```
-
-### Iterating Through Records
-```crystal
-cursor = session.open_cursor("table:users")
-
-# Iterate forward
-while cursor.next == 0
-  puts "Key: #{cursor.get_key_string}, Value: #{cursor.get_value_string}"
-end
-
-# Iterate backward
-cursor.reset
-while cursor.prev == 0
-  puts "Key: #{cursor.get_key_string}, Value: #{cursor.get_value_string}"
-end
-
-cursor.close
-```
-
-## Build Commands
-
-```bash
-make          # Build everything
-make install  # Install the library
-make clean    # Clean build artifacts
-make test     # Run tests
-make info     # Show build info
-```
+- Basic database operations
+- Working with multiple tables
+- Error handling patterns
+- Database statistics and inspection
 
 ## Development
 
+### Building from Source
+
+```bash
+# From the crystal directory
+make
+
+# Or using the build script
+./build.sh
+
+# Or using Task
+task build-crystal
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+crystal spec
+
+# Run with verbose output
+crystal spec --verbose
+
+# Or using Task
+task test-crystal
+```
+
 ### Project Structure
+
 ```
 lang/crystal/
-├── src/                    # Crystal source code
+├── src/                    # Crystal source files
 │   ├── wiredtiger.cr      # Main entry point
-│   ├── db.cr              # Main module
-│   └── db/                # Database classes
-│       ├── wired_tiger.cr
-│       ├── connection.cr
-│       ├── session.cr
-│       ├── cursor.cr
-│       └── wired_tiger_exception.cr
-├── wiredtiger_crystal.c   # C extension
-├── Makefile               # Build configuration
-├── shard.yml              # Crystal package config
+│   └── wiredtiger/        # Core modules
+│       └── db/            # Database classes
+├── spec/                   # Test files
+├── examples/               # Example applications
+├── example_project/        # Standalone example project
+├── wiredtiger_crystal.c   # C extension source
+├── install.sh             # Installation script
+├── uninstall.sh           # Uninstallation script
+├── shard.yml              # Shard configuration
 └── README.md              # This file
 ```
 
-### Adding New Features
-1. Add the C function to `wiredtiger_crystal.c`
-2. Add the FFI binding to the appropriate Crystal class
-3. Add the Crystal method that uses the binding
-4. Update tests and documentation
+## Installation for External Projects
+
+### As a Git Dependency
+
+```yaml
+dependencies:
+  wiredtiger:
+    git: https://github.com/wiredtiger/wiredtiger.git
+    version: ~> 1.0.0
+```
+
+### As a Local Path Dependency
+
+```yaml
+dependencies:
+  wiredtiger:
+    path: /path/to/wiredtiger/lang/crystal
+```
+
+### From System Installation
+
+After running `./install.sh`:
+
+```yaml
+dependencies:
+  wiredtiger:
+    path: /usr/local/include/wiredtiger/crystal
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-**Library not found**: Ensure WiredTiger is installed and the library path is correct.
-```bash
-export LD_LIBRARY_PATH=/path/to/wiredtiger/lib:$LD_LIBRARY_PATH
-```
+1. **Library not found**: Ensure WiredTiger core library is installed
+2. **Compilation errors**: Check Crystal version (requires 1.0.0+)
+3. **Permission errors**: Verify write permissions in target directories
 
-**Compilation errors**: Check that Crystal and the C compiler are properly installed.
-```bash
-crystal --version
-gcc --version
-```
+### Getting Help
 
-**Runtime errors**: Verify the native library is built and accessible.
-```bash
-ls -la lib/
-```
+- Check the [WiredTiger documentation](https://github.com/wiredtiger/wiredtiger)
+- Run tests to verify installation: `crystal spec`
+- Review the example project in `example_project/`
+
+## License
+
+This project is licensed under the Apache-2.0 License. See the LICENSE file for details.
 
 ## Contributing
+
+Contributions are welcome! Please:
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests
+4. Add tests for new functionality
 5. Submit a pull request
 
-## License
+## Version History
 
-Apache License 2.0 - see the main WiredTiger repository for details.
-
-## Support
-
-- [WiredTiger Documentation](https://source.wiredtiger.com/)
-- [Crystal Documentation](https://crystal-lang.org/docs/)
-- [GitHub Issues](https://github.com/wiredtiger/wiredtiger/issues)
+- **1.0.0**: Initial release with basic database operations
+- Support for connections, sessions, cursors, and tables
+- Error handling with Crystal exceptions
+- Comprehensive test suite with file verification

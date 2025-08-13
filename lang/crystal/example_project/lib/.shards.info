@@ -1,0 +1,9 @@
+---
+version: 1.0
+shards:
+  wiredtiger:
+    path: ../
+    version: 1.0.0
+  wiredtiger-crystal:
+    path: ../
+    version: 1.0.0
