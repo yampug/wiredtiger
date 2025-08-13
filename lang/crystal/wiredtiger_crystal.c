@@ -82,6 +82,36 @@ int session_close(void* session, const char* config) {
     return ret;
 }
 
+// Begin a transaction
+int session_begin_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->begin_transaction(wt_session, config);
+    
+    return ret;
+}
+
+// Commit a transaction
+int session_commit_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->commit_transaction(wt_session, config);
+    
+    return ret;
+}
+
+// Rollback a transaction
+int session_rollback_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->rollback_transaction(wt_session, config);
+    
+    return ret;
+}
+
 // Set the cursor's string key
 int cursor_put_key_string(void* cursor, const char* key) {
     if (!cursor) return -1;
@@ -100,6 +130,16 @@ int cursor_put_value_string(void* cursor, const char* value) {
     wt_cursor->set_value(wt_cursor, value);
     
     return 0;
+}
+
+// Update the current record
+int cursor_update(void* cursor) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int ret = wt_cursor->update(wt_cursor);
+    
+    return ret;
 }
 
 // Insert a record

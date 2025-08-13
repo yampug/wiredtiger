@@ -17,6 +17,11 @@ module WiredTiger
         fun session_create(session : Void*, uri : Char*, config : Char*) : Int32
         fun session_open_cursor(session : Void*, uri : Char*, to_dup : Void*, config : Char*) : Void*
         fun session_close(session : Void*, config : Char*) : Int32
+        
+        # Transaction operations
+        fun session_begin_transaction(session : Void*, config : Char*) : Int32
+        fun session_commit_transaction(session : Void*, config : Char*) : Int32
+        fun session_rollback_transaction(session : Void*, config : Char*) : Int32
       end
       
       # Create a table, index or other data source
@@ -44,6 +49,36 @@ module WiredTiger
         raise WiredTigerException.new("Failed to open cursor: #{uri}") if cursor_ptr.null?
         
         Cursor.new(cursor_ptr)
+      end
+      
+      # Begin a transaction
+      # @param config [String?] Configuration string (optional)
+      # @raise [WiredTigerException] if transaction cannot be started
+      def begin_transaction(config : String? = nil)
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        ret = LibSession.session_begin_transaction(@native_handle, config_ptr)
+        raise WiredTigerException.new("Failed to begin transaction") if ret != 0
+      end
+      
+      # Commit the current transaction
+      # @param config [String?] Configuration string (optional)
+      # @raise [WiredTigerException] if transaction cannot be committed
+      def commit_transaction(config : String? = nil)
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        ret = LibSession.session_commit_transaction(@native_handle, config_ptr)
+        raise WiredTigerException.new("Failed to commit transaction") if ret != 0
+      end
+      
+      # Rollback the current transaction
+      # @param config [String?] Configuration string (optional)
+      # @raise [WiredTigerException] if transaction cannot be rolled back
+      def rollback_transaction(config : String? = nil)
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        ret = LibSession.session_rollback_transaction(@native_handle, config_ptr)
+        raise WiredTigerException.new("Failed to rollback transaction") if ret != 0
       end
       
       # Close this session

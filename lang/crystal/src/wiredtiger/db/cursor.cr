@@ -17,6 +17,7 @@ module WiredTiger
         fun cursor_put_key_string(cursor : Void*, key : Char*) : Int32
         fun cursor_put_value_string(cursor : Void*, value : Char*) : Int32
         fun cursor_insert(cursor : Void*) : Int32
+        fun cursor_update(cursor : Void*) : Int32
         fun cursor_reset(cursor : Void*) : Int32
         fun cursor_search(cursor : Void*) : Int32
         fun cursor_get_value_string(cursor : Void*) : Char*
@@ -106,6 +107,14 @@ module WiredTiger
       def insert : Int32
         ret = LibCursor.cursor_insert(@native_handle)
         raise WiredTigerException.new("Failed to insert record") if ret != 0
+        ret
+      end
+      
+      # Update the current record
+      # @return [Int] 0 on success, error code on failure
+      def update : Int32
+        ret = LibCursor.cursor_update(@native_handle)
+        raise WiredTigerException.new("Failed to update record") if ret != 0
         ret
       end
       
