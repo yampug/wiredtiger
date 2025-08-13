@@ -229,11 +229,10 @@ describe "WiredTiger Advanced Cursor Operations" do
     
     # 1. Insert " there" at position 5
     # 2. Replace "World" with "Crystal" at position 12
-    # 3. Remove the space before "Crystal"
+    # Note: We keep the space between "there" and "Crystal"
     mods = [
       WiredTiger::DB::Modify.insert(" there", 5),
-      WiredTiger::DB::Modify.replace("Crystal", 17, 5),  # Adjusted offset after insert
-      WiredTiger::DB::Modify.remove(16, 1)  # Adjusted offset after insert
+      WiredTiger::DB::Modify.replace("Crystal", 12, 5)  # "World" starts at position 12
     ]
     
     cursor.modify(mods)

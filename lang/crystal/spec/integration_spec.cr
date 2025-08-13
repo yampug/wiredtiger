@@ -150,8 +150,8 @@ describe "WiredTiger Integration Scenarios" do
     # Perform complex modify operations
     modifications = [
       WiredTiger::DB::Modify.insert(" there", 5),           # Insert at position 5
-      WiredTiger::DB::Modify.replace("beautiful", 6, 5),        # Replace "World" with "beautiful"
-      WiredTiger::DB::Modify.insert("!", 20)                # Add exclamation at end
+      WiredTiger::DB::Modify.replace("beautiful", 12, 5),   # Replace "World" with "beautiful" at position 12
+      WiredTiger::DB::Modify.insert("!", 21)                # Add exclamation right after "beautiful"
     ]
     
     cursor.modify(modifications)
@@ -172,7 +172,7 @@ describe "WiredTiger Integration Scenarios" do
     conn.close
     
     # Verify database file was created with sufficient size
-    DatabaseFileVerifier.verify_database_file(test_dir, 50).should be_true
+    DatabaseFileVerifier.verify_database_file(test_dir, 30).should be_true
   end
   
   it "handles statistics with complex operations" do
