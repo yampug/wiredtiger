@@ -184,16 +184,16 @@ This document tracks the implementation status of WiredTiger Crystal bindings co
 
 | Phase | Target | Current | Status |
 |-------|--------|---------|---------|
-| **Phase 1** | 70% | 65% | 🟡 In Progress |
-| **Phase 2** | 85% | 65% | 🔴 Not Started |
-| **Phase 3** | 95% | 65% | 🔴 Not Started |
-| **Phase 4** | 100% | 65% | 🔴 Not Started |
+| **Phase 1** | 70% | 75% | 🟡 In Progress |
+| **Phase 2** | 85% | 75% | 🔴 Not Started |
+| **Phase 3** | 95% | 75% | 🔴 Not Started |
+| **Phase 4** | 100% | 75% | 🔴 Not Started |
 
 **Current Progress Breakdown:**
 - ✅ **Basic Operations**: 100% (Connection, Session, Cursor management)
 - ✅ **Data Types**: 60% (Strings, Integers, Bytes - Float not supported natively)
 - ✅ **Transactions**: 90% (Full transaction support implemented)
-- 🟡 **Advanced Cursor Ops**: 30% (Update implemented, remove/modify pending)
+- ✅ **Advanced Cursor Ops**: 80% (Update, remove, modify implemented)
 - ❌ **Statistics API**: 0% (Not implemented)
 - ❌ **Backup/Recovery**: 0% (Not implemented)
 
@@ -204,7 +204,8 @@ This document tracks the implementation status of WiredTiger Crystal bindings co
 2. **✅ COMPLETED: Implement extended data type support** (int64, bytes) in `src/wiredtiger/db/cursor.cr`
 3. **✅ COMPLETED: Implement basic transaction support** in `src/wiredtiger/db/session.cr`
 4. **✅ COMPLETED: Add transaction tests** to the test suite
-5. **🔴 NEXT PRIORITY: Implement advanced cursor operations** (remove, modify) in `src/wiredtiger/db/cursor.cr`
+5. **✅ COMPLETED: Implement advanced cursor operations** (remove, modify) in `src/wiredtiger/db/cursor.cr`
+6. **🔴 NEXT PRIORITY: Implement statistics and monitoring API** in `src/wiredtiger/db/session.cr`
 
 **Recently Completed:**
 - ✅ Added int64 key/value support (`put_key_int`, `put_value_int`, `get_key_int`, `get_value_int`)
@@ -215,6 +216,10 @@ This document tracks the implementation status of WiredTiger Crystal bindings co
 - ✅ **Added cursor update method** for modifying existing records
 - ✅ **Comprehensive transaction testing** with 7 test cases covering all major scenarios
 - ✅ **Transaction example program** demonstrating real-world usage patterns
+- ✅ **Added advanced cursor operations** (`remove`, `modify`) with full WT_MODIFY support
+- ✅ **Created Modify and Item structures** for complex data manipulation
+- ✅ **Comprehensive advanced cursor testing** with 8 test cases covering all scenarios
+- ✅ **Advanced cursor example program** demonstrating real-world usage patterns
 
 ### **Required C Functions to Implement**
 ```c
@@ -229,9 +234,12 @@ int cursor_put_value_int(void* cursor, int64_t value);
 int cursor_put_key_bytes(void* cursor, const void* data, size_t size);
 int cursor_put_value_bytes(void* cursor, const void* data, size_t size);
 
-// 🔴 NEXT: Advanced cursor operations
+// ✅ COMPLETED: Advanced cursor operations
 int cursor_remove(void* cursor);
 int cursor_modify(void* cursor, void* modify_array, int count);
+
+// 🔴 NEXT: Statistics and monitoring
+int session_get_statistics(void* session, void* stats);
 ```
 
 ## 📝 **Notes**
@@ -252,4 +260,4 @@ int cursor_modify(void* cursor, void* modify_array, int count);
 ---
 
 *Last Updated: August 2024*
-*Status: Phase 1 - Data Types & Transactions Completed, Next: Advanced Cursor Operations*
+*Status: Phase 1 - Data Types, Transactions & Advanced Cursor Operations Completed, Next: Statistics API*

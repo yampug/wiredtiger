@@ -31,6 +31,8 @@ int cursor_put_key_string(void* cursor, const char* key);
 int cursor_put_value_string(void* cursor, const char* value);
 int cursor_insert(void* cursor);
 int cursor_update(void* cursor);
+int cursor_remove(void* cursor);
+int cursor_modify(void* cursor, void* entries, int nentries);
 int cursor_reset(void* cursor);
 int cursor_search(void* cursor);
 const char* cursor_get_value_string(void* cursor);
@@ -38,6 +40,9 @@ const char* cursor_get_key_string(void* cursor);
 int cursor_close(void* cursor);
 int cursor_next(void* cursor);
 int cursor_prev(void* cursor);
+
+// Modify calculation
+int crystal_calc_modify(void* session, const void* oldv, const void* newv, size_t maxdiff, void* entries, int* nentriesp);
 
 // Extended data type support
 int cursor_put_key_int(void* cursor, int64_t key);

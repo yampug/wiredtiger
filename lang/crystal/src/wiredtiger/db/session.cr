@@ -1,5 +1,7 @@
 
 
+require "./modify"
+
 module WiredTiger
   module DB
     # Represents a session within a WiredTiger connection
@@ -22,6 +24,9 @@ module WiredTiger
         fun session_begin_transaction(session : Void*, config : Char*) : Int32
         fun session_commit_transaction(session : Void*, config : Char*) : Int32
         fun session_rollback_transaction(session : Void*, config : Char*) : Int32
+        
+        # Modify calculation
+        fun crystal_calc_modify(session : Void*, oldv : Void*, newv : Void*, maxdiff : LibC::SizeT, entries : Void*, nentriesp : Int32*) : Int32
       end
       
       # Create a table, index or other data source
@@ -79,6 +84,43 @@ module WiredTiger
         
         ret = LibSession.session_rollback_transaction(@native_handle, config_ptr)
         raise WiredTigerException.new("Failed to rollback transaction") if ret != 0
+      end
+      
+      # Calculate modify operations between old and new values
+      # @param old_value [String] The old value
+      # @param new_value [String] The new value
+      # @param max_diff [Int] Maximum bytes difference
+      # @param max_entries [Int] Maximum number of modify entries
+      # @return [Array(Modify)] Array of modifications
+      def calc_modify(old_value : String, new_value : String, max_diff : Int, max_entries : Int) : Array(Modify)
+        # Create WT_ITEM structures
+        old_item = Item.from_string(old_value)
+        new_item = Item.from_string(new_value)
+        
+        # Allocate space for modify entries
+        entries = Pointer(Void).malloc(max_entries * sizeof(Modify))
+        nentries = max_entries
+        
+        ret = LibSession.crystal_calc_modify(
+          @native_handle,
+          pointerof(old_item),
+          pointerof(new_item),
+          LibC::SizeT.new(max_diff),
+          entries,
+          pointerof(nentries)
+        )
+        
+        raise WiredTigerException.new("Failed to calculate modify operations") if ret != 0
+        
+        # Convert C array back to Crystal array
+        result = [] of Modify
+        nentries.times do |i|
+          entry_ptr = entries + (i * sizeof(Modify))
+          entry = entry_ptr.as(Pointer(Modify)).value
+          result << entry
+        end
+        
+        result
       end
       
       # Close this session

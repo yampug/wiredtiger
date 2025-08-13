@@ -18,6 +18,8 @@ module WiredTiger
         fun cursor_put_value_string(cursor : Void*, value : Char*) : Int32
         fun cursor_insert(cursor : Void*) : Int32
         fun cursor_update(cursor : Void*) : Int32
+        fun cursor_remove(cursor : Void*) : Int32
+        fun cursor_modify(cursor : Void*, entries : Void*, nentries : Int32) : Int32
         fun cursor_reset(cursor : Void*) : Int32
         fun cursor_search(cursor : Void*) : Int32
         fun cursor_get_value_string(cursor : Void*) : Char*
@@ -115,6 +117,32 @@ module WiredTiger
       def update : Int32
         ret = LibCursor.cursor_update(@native_handle)
         raise WiredTigerException.new("Failed to update record") if ret != 0
+        ret
+      end
+      
+      # Remove the current record
+      # @return [Int] 0 on success, error code on failure
+      def remove : Int32
+        ret = LibCursor.cursor_remove(@native_handle)
+        raise WiredTigerException.new("Failed to remove record") if ret != 0
+        ret
+      end
+      
+      # Modify the current record using an array of modifications
+      # @param entries [Array(Modify)] Array of modifications to apply
+      # @return [Int] 0 on success, error code on failure
+      def modify(entries : Array(Modify)) : Int32
+        # Convert Crystal array to C array
+        nentries = entries.size
+        c_entries = Pointer(Void).malloc(nentries * sizeof(Modify))
+        
+        entries.each_with_index do |entry, i|
+          entry_ptr = c_entries + (i * sizeof(Modify))
+          entry_ptr.as(Pointer(Modify)).value = entry
+        end
+        
+        ret = LibCursor.cursor_modify(@native_handle, c_entries, nentries)
+        raise WiredTigerException.new("Failed to modify record") if ret != 0
         ret
       end
       

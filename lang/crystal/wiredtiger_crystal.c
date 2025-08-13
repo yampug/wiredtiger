@@ -142,12 +142,47 @@ int cursor_update(void* cursor) {
     return ret;
 }
 
+// Remove the current record
+int cursor_remove(void* cursor) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    int ret = wt_cursor->remove(wt_cursor);
+    
+    return ret;
+}
+
+// Modify the current record
+int cursor_modify(void* cursor, void* entries, int nentries) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    WT_MODIFY *wt_entries = (WT_MODIFY*)entries;
+    int ret = wt_cursor->modify(wt_cursor, wt_entries, nentries);
+    
+    return ret;
+}
+
 // Insert a record
 int cursor_insert(void* cursor) {
     if (!cursor) return -1;
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     int ret = wt_cursor->insert(wt_cursor);
+    
+    return ret;
+}
+
+// Calculate modify operations
+int crystal_calc_modify(void* session, const void* oldv, const void* newv, size_t maxdiff, void* entries, int* nentriesp) {
+    if (!session || !oldv || !newv || !entries || !nentriesp) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    WT_ITEM *wt_oldv = (WT_ITEM*)oldv;
+    WT_ITEM *wt_newv = (WT_ITEM*)newv;
+    WT_MODIFY *wt_entries = (WT_MODIFY*)entries;
+    
+    int ret = wiredtiger_calc_modify(wt_session, wt_oldv, wt_newv, maxdiff, wt_entries, nentriesp);
     
     return ret;
 }
