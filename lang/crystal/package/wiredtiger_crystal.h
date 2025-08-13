@@ -1,6 +1,9 @@
 #ifndef WIREDTIGER_CRYSTAL_H
 #define WIREDTIGER_CRYSTAL_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -13,16 +16,26 @@ int crystal_wiredtiger_close(void* conn, const char* config);
 void* connection_open_session(void* conn, const char* config);
 int connection_close(void* conn, const char* config);
 
+// Transaction operations
+int session_begin_transaction(void* session, const char* config);
+int session_commit_transaction(void* session, const char* config);
+int session_rollback_transaction(void* session, const char* config);
+
 // Table and cursor operations
 int session_create(void* session, const char* uri, const char* config);
 void* session_open_cursor(void* session, const char* uri, void* to_dup, const char* config);
 void* session_open_backup_cursor(void* session, const char* config);
 int session_truncate(void* session, const char* uri, const char* start, const char* stop, const char* config);
+int session_checkpoint(void* session, const char* config);
 int session_close(void* session, const char* config);
 
 // Cursor operations
 int cursor_put_key_string(void* cursor, const char* key);
 int cursor_put_value_string(void* cursor, const char* value);
+int cursor_put_key_int(void* cursor, int64_t key);
+int cursor_put_value_int(void* cursor, int64_t value);
+int cursor_put_key_bytes(void* cursor, const void* data, size_t size);
+int cursor_put_value_bytes(void* cursor, const void* data, size_t size);
 int cursor_insert(void* cursor);
 int cursor_reset(void* cursor);
 int cursor_search(void* cursor);

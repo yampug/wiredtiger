@@ -39,6 +39,9 @@ module WiredTiger
         
         # Truncate support
         fun session_truncate(session : Void*, uri : Char*, start : Void*, stop : Void*, config : Char*) : Int32
+        
+        # Checkpoint support
+        fun session_checkpoint(session : Void*, config : Char*) : Int32
       end
       
       # Create a table, index or other data source
@@ -269,6 +272,16 @@ module WiredTiger
         
         ret = LibSession.session_truncate(@native_handle, uri_ptr, start_ptr, stop_ptr, config_ptr)
         raise WiredTigerException.new("Failed to truncate collection: #{uri}") if ret != 0
+      end
+      
+      # Create a checkpoint
+      # @param config [String?] Checkpoint configuration (e.g., "name=my_checkpoint,force=true")
+      # @raise [WiredTigerException] if checkpoint creation fails
+      def checkpoint(config : String? = nil)
+        config_ptr = config ? config.to_unsafe.as(Pointer(Char)) : Pointer(Char).null
+        
+        ret = LibSession.session_checkpoint(@native_handle, config_ptr)
+        raise WiredTigerException.new("Failed to create checkpoint") if ret != 0
       end
       
       # Close this session

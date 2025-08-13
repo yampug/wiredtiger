@@ -107,6 +107,46 @@ int session_truncate(void* session, const char* uri, const char* start, const ch
     return ret;
 }
 
+// Begin a transaction
+int session_begin_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->begin_transaction(wt_session, config);
+    
+    return ret;
+}
+
+// Commit a transaction
+int session_commit_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->commit_transaction(wt_session, config);
+    
+    return ret;
+}
+
+// Rollback a transaction
+int session_rollback_transaction(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->rollback_transaction(wt_session, config);
+    
+    return ret;
+}
+
+// Create a checkpoint
+int session_checkpoint(void* session, const char* config) {
+    if (!session) return -1;
+    
+    WT_SESSION *wt_session = (WT_SESSION*)session;
+    int ret = wt_session->checkpoint(wt_session, config);
+    
+    return ret;
+}
+
 // Set the cursor's string key
 int cursor_put_key_string(void* cursor, const char* key) {
     if (!cursor) return -1;
@@ -123,6 +163,46 @@ int cursor_put_value_string(void* cursor, const char* value) {
     
     WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
     wt_cursor->set_value(wt_cursor, value);
+    
+    return 0;
+}
+
+// Set the cursor's integer key
+int cursor_put_key_int(void* cursor, int64_t key) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_key(wt_cursor, key);
+    
+    return 0;
+}
+
+// Set the cursor's integer value
+int cursor_put_value_int(void* cursor, int64_t value) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_value(wt_cursor, value);
+    
+    return 0;
+}
+
+// Set the cursor's bytes key
+int cursor_put_key_bytes(void* cursor, const void* data, size_t size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_key(wt_cursor, data, size);
+    
+    return 0;
+}
+
+// Set the cursor's bytes value
+int cursor_put_value_bytes(void* cursor, const void* data, size_t size) {
+    if (!cursor) return -1;
+    
+    WT_CURSOR *wt_cursor = (WT_CURSOR*)cursor;
+    wt_cursor->set_value(wt_cursor, data, size);
     
     return 0;
 }
